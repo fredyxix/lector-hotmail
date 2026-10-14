@@ -353,6 +353,8 @@ st.markdown(polished_css, unsafe_allow_html=True)
 # ==========================================
 # INICIALIZACIÓN DE SESSION STATE
 # ==========================================
+MAX_CORREOS = 5
+
 for key, default in {
     "correos": None,
     "metodo_usado": "",
@@ -444,7 +446,7 @@ def obtener_access_token_multivia(client_id, refresh_token):
             ultimo_error = {"error": str(e)}
     return ultimo_error
 
-def leer_via_graph_api(access_token, cantidad=15):
+def leer_via_graph_api(access_token, cantidad=MAX_CORREOS):
     headers = {"Authorization": f"Bearer {access_token}"}
     url = f"https://graph.microsoft.com/v1.0/me/messages?$top={cantidad}&$select=subject,from,receivedDateTime,body"
     r = requests.get(url, headers=headers, timeout=12)
@@ -452,7 +454,7 @@ def leer_via_graph_api(access_token, cantidad=15):
         return None
     datos = r.json()
     lista_correos = []
-    for msg in datos.get("value", []):
+    for msg in datos.get("value", [])[:cantidad]:
         remitente_info = msg.get("from", {}).get("emailAddress", {})
         nombre = remitente_info.get("name", "").strip()
         direccion = remitente_info.get("address", "").strip()
@@ -503,7 +505,7 @@ def extraer_cuerpo(msg):
                 cuerpo_texto = payload.decode(errors="ignore")
     return cuerpo_html if cuerpo_html else f"<pre>{html.escape(cuerpo_texto)}</pre>"
 
-def leer_correos_imap(correo, access_token, cantidad=15):
+def leer_correos_imap(correo, access_token, cantidad=MAX_CORREOS):
     auth_string = f"user={correo}\x01auth=Bearer {access_token}\x01\x01"
     mail = imaplib.IMAP4_SSL("outlook.office365.com", 993)
     mail.authenticate("XOAUTH2", lambda x: auth_string.encode("utf-8"))
@@ -558,22 +560,16 @@ with tab_lector:
         credenciales = st.text_area(
             "Cadena de acceso (email|password|refresh_token|client_id)",
             value=st.session_state["credenciales_input"],
-            placeholder="ejemplo@outlook.com|tu_clave|token_de_actualizacion_oauth|00000000-0000-0000-0000-000000000000",
+            placeholder="usuario@outlook.com|clave123|M.C102_token_ejemplo...|a1b2c3d4-e5f6-1234-a1b2-c3d4e5f61234",
             height=88
         )
         st.session_state["credenciales_input"] = credenciales
         
-        col_btn, col_limit = st.columns([2.2, 1])
-        with col_limit:
-            cantidad_mensajes = st.selectbox(
-                "Cantidad a cargar",
-                options=["10 mensajes", "20 mensajes", "35 mensajes", "50 mensajes"],
-                index=0,
-                label_visibility="collapsed"
-            )
-            limite_num = int(cantidad_mensajes.split()[0])
-        with col_btn:
-            consultar_btn = st.button("Sincronizar Bandeja de Entrada", type="primary", use_container_width=True)
+        consultar_btn = st.button(
+            "Sincronizar Bandeja de Entrada (Últimos 5 correos)",
+            type="primary",
+            use_container_width=True
+        )
 
     if consultar_btn:
         if not credenciales or "|" not in credenciales:
@@ -598,14 +594,14 @@ with tab_lector:
                         st.session_state["correo_activo"] = correo
                         
                         try:
-                            correos = leer_via_graph_api(access_token, cantidad=limite_num)
+                            correos = leer_via_graph_api(access_token, cantidad=MAX_CORREOS)
                             if correos is not None:
                                 st.session_state["metodo_usado"] = "Microsoft Graph API"
                             else:
-                                correos = leer_correos_imap(correo, access_token, cantidad=limite_num)
+                                correos = leer_correos_imap(correo, access_token, cantidad=MAX_CORREOS)
                                 st.session_state["metodo_usado"] = "IMAP XOAUTH2"
                                 
-                            st.session_state["correos"] = correos
+                            st.session_state["correos"] = correos[:MAX_CORREOS]
                             st.session_state["correo_idx"] = 0
                             st.rerun()
                         except Exception as e:
@@ -613,12 +609,12 @@ with tab_lector:
 
     # Renderizado del Visor de Correos
     if st.session_state["correos"] is not None:
-        correos = st.session_state["correos"]
+        correos = st.session_state["correos"][:MAX_CORREOS]
         
         st.markdown(f"""
         <div class="sync-bar">
             <span>Sesión activa vía {st.session_state['metodo_usado']}</span>
-            <span>{len(correos)} mensajes recibidos</span>
+            <span>Mostrando {len(correos)} mensajes recientes</span>
         </div>
         """, unsafe_allow_html=True)
 
@@ -636,78 +632,65 @@ with tab_lector:
             """, unsafe_allow_html=True)
         else:
             with st.container(border=True, key="card_visor_correo"):
-                filtro = st.text_input(
-                    "Buscar en la bandeja",
-                    placeholder="Filtrar por asunto o remitente..."
-                )
+                opciones_indices = list(range(len(correos)))
                 
-                correos_filtrados = [
-                    c for c in correos
-                    if filtro.lower() in c["asunto"].lower() or filtro.lower() in c["remitente"].lower()
-                ] if filtro else correos
+                def formatear_opcion(i):
+                    c = correos[i]
+                    rem = c["remitente"].split("<")[0].strip() or c["remitente"]
+                    return f"{ i + 1 }. {c['asunto'][:52]}  —  {rem[:26]} ({c['fecha']})"
 
-                if not correos_filtrados:
-                    st.info("No hay mensajes que coincidan con tu búsqueda.")
-                else:
-                    opciones_indices = list(range(len(correos_filtrados)))
-                    
-                    def formatear_opcion(i):
-                        c = correos_filtrados[i]
-                        rem = c["remitente"].split("<")[0].strip() or c["remitente"]
-                        return f"{ i + 1 }. {c['asunto'][:52]}  —  {rem[:26]} ({c['fecha']})"
+                seleccion = st.selectbox(
+                    f"Seleccionar mensaje ({len(correos)} recientes)",
+                    options=opciones_indices,
+                    format_func=formatear_opcion,
+                    index=min(st.session_state["correo_idx"], len(correos) - 1)
+                )
+                st.session_state["correo_idx"] = seleccion
+                correo_actual = correos[seleccion]
 
-                    seleccion = st.selectbox(
-                        f"Seleccionar mensaje ({len(correos_filtrados)} disponibles)",
-                        options=opciones_indices,
-                        format_func=formatear_opcion,
-                        index=min(st.session_state["correo_idx"], len(correos_filtrados) - 1)
+                # Controles Anterior / Siguiente
+                col_prev, col_pos, col_next = st.columns([1, 1.3, 1])
+                with col_prev:
+                    if st.button("Anterior", type="secondary", disabled=(seleccion == 0), use_container_width=True):
+                        st.session_state["correo_idx"] = max(0, seleccion - 1)
+                        st.rerun()
+                with col_pos:
+                    st.markdown(
+                        f"<div style='text-align:center; padding-top:9px; font-size:12px; font-weight:600; color:#64748b;'>Mensaje {seleccion + 1} de {len(correos)}</div>",
+                        unsafe_allow_html=True
                     )
-                    st.session_state["correo_idx"] = seleccion
-                    correo_actual = correos_filtrados[seleccion]
+                with col_next:
+                    if st.button("Siguiente", type="secondary", disabled=(seleccion >= len(correos) - 1), use_container_width=True):
+                        st.session_state["correo_idx"] = min(len(correos) - 1, seleccion + 1)
+                        st.rerun()
 
-                    # Controles Anterior / Siguiente
-                    col_prev, col_pos, col_next = st.columns([1, 1.3, 1])
-                    with col_prev:
-                        if st.button("Anterior", type="secondary", disabled=(seleccion == 0), use_container_width=True):
-                            st.session_state["correo_idx"] = max(0, seleccion - 1)
-                            st.rerun()
-                    with col_pos:
-                        st.markdown(
-                            f"<div style='text-align:center; padding-top:9px; font-size:12px; font-weight:600; color:#64748b;'>Mensaje {seleccion + 1} de {len(correos_filtrados)}</div>",
-                            unsafe_allow_html=True
-                        )
-                    with col_next:
-                        if st.button("Siguiente", type="secondary", disabled=(seleccion >= len(correos_filtrados) - 1), use_container_width=True):
-                            st.session_state["correo_idx"] = min(len(correos_filtrados) - 1, seleccion + 1)
-                            st.rerun()
+                st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin: 12px 0;'>", unsafe_allow_html=True)
 
-                    st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin: 12px 0;'>", unsafe_allow_html=True)
+                asunto_seguro = html.escape(correo_actual["asunto"])
+                remitente_seguro = html.escape(correo_actual["remitente"])
+                fecha_segura = html.escape(correo_actual["fecha"])
 
-                    asunto_seguro = html.escape(correo_actual["asunto"])
-                    remitente_seguro = html.escape(correo_actual["remitente"])
-                    fecha_segura = html.escape(correo_actual["fecha"])
-
-                    st.markdown(f"""
-                    <div class="mail-header-box">
-                        <div class="mail-subject-line">{asunto_seguro}</div>
-                        <div class="mail-meta-line">
-                            <span>De: <span class="mail-from-strong">{remitente_seguro}</span></span>
-                            <span>{fecha_segura}</span>
-                        </div>
+                st.markdown(f"""
+                <div class="mail-header-box">
+                    <div class="mail-subject-line">{asunto_seguro}</div>
+                    <div class="mail-meta-line">
+                        <span>De: <span class="mail-from-strong">{remitente_seguro}</span></span>
+                        <span>{fecha_segura}</span>
                     </div>
-                    """, unsafe_allow_html=True)
+                </div>
+                """, unsafe_allow_html=True)
 
-                    st.components.v1.html(
-                        envolver_html_correo(correo_actual["cuerpo"]),
-                        height=460,
-                        scrolling=True
-                    )
+                st.components.v1.html(
+                    envolver_html_correo(correo_actual["cuerpo"]),
+                    height=460,
+                    scrolling=True
+                )
     else:
         st.markdown("""
         <div class="empty-state-card">
             <span class="empty-badge">Listo para conectar</span>
             <div class="card-title">Ninguna sesión sincronizada</div>
-            <p class="card-desc">Introduce tu cadena de credenciales arriba y pulsa "Sincronizar Bandeja de Entrada" para visualizar tus correos.</p>
+            <p class="card-desc">Introduce tu cadena de credenciales arriba y pulsa "Sincronizar Bandeja de Entrada" para visualizar los últimos 5 correos.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -727,7 +710,7 @@ with tab_generador:
         with col_mail:
             gen_email = st.text_input(
                 "Correo electrónico",
-                placeholder="ejemplo@outlook.com"
+                placeholder="usuario@outlook.com"
             )
         with col_pass:
             gen_pass = st.text_input(
@@ -736,10 +719,10 @@ with tab_generador:
                 placeholder="Ingresa tu contraseña"
             )
             
-        # Sin 'value' prellenado: solo un placeholder ficticio de guía
+        # Placeholder hexadecimal en minúscula combinando letras a-f y números 1-6
         gen_client_id = st.text_input(
             "Client ID de la aplicación (Azure AD)",
-            placeholder="Ej: 00000000-0000-0000-0000-000000000000"
+            placeholder="a1b2c3d4-e5f6-1234-a1b2-c3d4e5f61234"
         )
         
         st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
