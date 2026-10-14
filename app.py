@@ -7,7 +7,6 @@ from email.header import decode_header
 
 st.set_page_config(page_title="Quick Read Hotmail", layout="centered")
 
-# CSS limpio y SVG en Base64 para que nunca se rompa el diseño
 css_styles = """
 <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
 <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
@@ -99,7 +98,6 @@ div.stButton > button p::before {
 """
 st.markdown(css_styles, unsafe_allow_html=True)
 
-# Cabecera
 st.markdown("""
 <div class="header-container">
     <div class="icon-box">
@@ -120,15 +118,59 @@ credenciales = st.text_area(
     label_visibility="collapsed"
 )
 
-def obtener_access_token(client_id, refresh_token):
-    url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-    datos = {
-        "client_id": client_id.strip(),
-        "refresh_token": refresh_token.strip(),
-        "grant_type": "refresh_token",
-    }
-    respuesta = requests.post(url, data=datos)
-    return respuesta.json()
+def obtener_access_token_multivia(client_id, refresh_token):
+    endpoints = [
+        # Vía 1: Estándar Microsoft Online v2.0
+        ("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
+            "client_id": client_id.strip(),
+            "refresh_token": refresh_token.strip(),
+            "grant_type": "refresh_token",
+        }),
+        # Vía 2: Endpoint Consumer / Live (Ideal para tokens M.C540...)
+        ("https://login.microsoftonline.com/consumers/oauth2/v2.0/token", {
+            "client_id": client_id.strip(),
+            "refresh_token": refresh_token.strip(),
+            "grant_type": "refresh_token",
+        }),
+        # Vía 3: Live Login clásico
+        ("https://login.live.com/oauth20_token.srf", {
+            "client_id": client_id.strip(),
+            "refresh_token": refresh_token.strip(),
+            "grant_type": "refresh_token",
+        })
+    ]
+    
+    ultimo_error = {}
+    for url, datos in endpoints:
+        try:
+            r = requests.post(url, data=datos, timeout=10)
+            res_json = r.json()
+            if "access_token" in res_json:
+                return res_json
+            ultimo_error = res_json
+        except Exception as e:
+            ultimo_error = {"error": str(e)}
+            
+    return ultimo_error
+
+def leer_via_graph_api(access_token, cantidad=10):
+    headers = {"Authorization": f"Bearer {access_token}"}
+    url = f"https://graph.microsoft.com/v1.0/me/messages?$top={cantidad}&$select=subject,from,receivedDateTime,body"
+    r = requests.get(url, headers=headers, timeout=10)
+    if r.status_code != 200:
+        return None
+    datos = r.json()
+    lista_correos = []
+    for msg in datos.get("value", []):
+        remitente_info = msg.get("from", {}).get("emailAddress", {})
+        remitente = f"{remitente_info.get('name', '')} <{remitente_info.get('address', '')}>"
+        lista_correos.append({
+            "asunto": msg.get("subject", "Sin Asunto"),
+            "remitente": remitente.strip(),
+            "fecha": msg.get("receivedDateTime", ""),
+            "cuerpo": msg.get("body", {}).get("content", "")
+        })
+    return lista_correos
 
 def decodificar_texto(texto):
     if not texto:
@@ -201,22 +243,27 @@ if st.button("Read Emails", use_container_width=True):
     if not credenciales or "|" not in credenciales:
         st.warning("Ingresa los datos en el formato exacto: email|password|refresh_token|client_id")
     else:
-        partes = credenciales.strip().split("|")
+        partes = [p.strip() for p in credenciales.strip().split("|")]
         if len(partes) < 4:
             st.error("Formato incompleto. Asegúrate de incluir las 4 partes separadas por '|'.")
         else:
             correo, password, refresh_token, client_id = partes[0], partes[1], partes[2], partes[3]
             
-            with st.spinner("Conectando con el servidor IMAP de Microsoft..."):
-                token_data = obtener_access_token(client_id, refresh_token)
+            with st.spinner("Autenticando y buscando mensajes en Microsoft..."):
+                token_data = obtener_access_token_multivia(client_id, refresh_token)
                 
                 if "access_token" not in token_data:
-                    st.error("Error al generar el token OAuth2. Verifica que el refresh_token siga activo.")
-                    with st.expander("Detalle técnico"):
+                    st.error("❌ El refresh_token de esta cuenta ha expirado o fue revocado por Microsoft (invalid_grant). Prueba con otra cuenta o inicia sesión manualmente con la contraseña.")
+                    with st.expander("Detalle técnico devuelto por Microsoft"):
                         st.json(token_data)
                 else:
+                    access_token = token_data["access_token"]
                     try:
-                        correos = leer_correos_imap(correo.strip(), token_data["access_token"], cantidad=10)
+                        # Intenta primero vía Graph API (más rápido) y si no, vía IMAP
+                        correos = leer_via_graph_api(access_token, cantidad=10)
+                        if correos is None:
+                            correos = leer_correos_imap(correo, access_token, cantidad=10)
+                            
                         if not correos:
                             st.markdown("""
                             <div class="empty-box">
@@ -243,7 +290,7 @@ if st.button("Read Emails", use_container_width=True):
                                     """, unsafe_allow_html=True)
                                     st.components.v1.html(c["cuerpo"], height=350, scrolling=True)
                     except Exception as e:
-                        st.error(f"Error de conexión IMAP: {str(e)}")
+                        st.error(f"Error al abrir bandeja: {str(e)}")
 else:
     st.markdown("""
     <div class="empty-box">
