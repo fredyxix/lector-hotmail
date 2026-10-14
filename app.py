@@ -15,11 +15,15 @@ st.set_page_config(
 )
 
 # ==========================================
-# CSS AVANZADO COMPATIBLE CON STREAMLIT CLOUD (1.38+)
+# CSS AVANZADO COMPATIBLE CON STREAMLIT CLOUD
 # ==========================================
 polished_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root {
+    --primary-color: #2563eb !important;
+}
 
 html, body, .stApp, p, label, input, textarea, button {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
@@ -85,7 +89,7 @@ div[data-testid="stToolbar"], footer, header {
     white-space: nowrap;
 }
 
-/* Pestañas Segmented Control (Sin la línea roja de Streamlit) */
+/* Pestañas Segmented Control (100% Azul / Blanco sin rojo de Streamlit) */
 div[data-testid="stTabs"] [data-baseweb="tab-list"] {
     background-color: #e2e8f0 !important;
     padding: 4px !important;
@@ -108,13 +112,22 @@ div[data-testid="stTabs"] button[data-baseweb="tab"] {
     margin: 0 !important;
 }
 
+div[data-testid="stTabs"] button[data-baseweb="tab"] p {
+    color: inherit !important;
+    font-weight: 600 !important;
+    font-size: 13px !important;
+}
+
 div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background-color: #ffffff !important;
     color: #2563eb !important;
     box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08) !important;
 }
 
-/* Eliminar por completo la barrita roja inferior de Streamlit */
+div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] p {
+    color: #2563eb !important;
+}
+
 div[data-testid="stTabs"] [data-baseweb="tab-highlight"],
 div[data-testid="stTabs"] [data-baseweb="tab-border"] {
     display: none !important;
@@ -122,7 +135,7 @@ div[data-testid="stTabs"] [data-baseweb="tab-border"] {
     height: 0px !important;
 }
 
-/* Tarjetas Blancas Reales (Soporte para todas las versiones de Streamlit) */
+/* Tarjetas Blancas Reales */
 div[data-testid="stVerticalBlockBorderWrapper"],
 div[class*="st-key-card_"] {
     background-color: #ffffff !important;
@@ -132,7 +145,6 @@ div[class*="st-key-card_"] {
     box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03) !important;
 }
 
-/* Evitar que Streamlit agrande títulos con h2/h3 usando clases div puras */
 .card-header {
     margin-bottom: 14px;
     padding-bottom: 12px;
@@ -154,7 +166,7 @@ div[class*="st-key-card_"] {
     line-height: 1.4 !important;
 }
 
-/* Labels e Inputs con contraste nítido */
+/* Labels, Inputs y Placeholders discretos */
 div[data-testid="stWidgetLabel"] p {
     font-size: 12.5px !important;
     font-weight: 600 !important;
@@ -167,6 +179,12 @@ div[data-baseweb="select"] > div {
     background-color: #f8fafc !important;
     border: 1px solid #cbd5e1 !important;
     border-radius: 8px !important;
+}
+
+div[data-baseweb="input"] input::placeholder,
+div[data-baseweb="textarea"] textarea::placeholder {
+    color: #94a3b8 !important;
+    opacity: 1 !important;
 }
 
 div[data-baseweb="input"]:focus-within,
@@ -536,12 +554,11 @@ with tab_lector:
         if hay_sesion else "Credenciales de conexión"
     )
 
-    # Si aún no hay correos, se muestra abierto; una vez sincronizado, se pliega para dar prioridad al lector
     with st.expander(titulo_expander, expanded=not hay_sesion):
         credenciales = st.text_area(
             "Cadena de acceso (email|password|refresh_token|client_id)",
             value=st.session_state["credenciales_input"],
-            placeholder="usuario@outlook.com|contraseña|M.C501...|9e5f94bc-e8a4-4e73-b8be-63364c29d753",
+            placeholder="ejemplo@outlook.com|tu_clave|token_de_actualizacion_oauth|00000000-0000-0000-0000-000000000000",
             height=88
         )
         st.session_state["credenciales_input"] = credenciales
@@ -710,25 +727,26 @@ with tab_generador:
         with col_mail:
             gen_email = st.text_input(
                 "Correo electrónico",
-                placeholder="usuario@outlook.com"
+                placeholder="ejemplo@outlook.com"
             )
         with col_pass:
             gen_pass = st.text_input(
                 "Contraseña (opcional para cadena)",
                 type="password",
-                placeholder="••••••••••••"
+                placeholder="Ingresa tu contraseña"
             )
             
+        # Sin 'value' prellenado: solo un placeholder ficticio de guía
         gen_client_id = st.text_input(
-            "Client ID de la aplicación (Azure AD / Thunderbird)",
-            value="9e5f94bc-e8a4-4e73-b8be-63364c29d753"
+            "Client ID de la aplicación (Azure AD)",
+            placeholder="Ej: 00000000-0000-0000-0000-000000000000"
         )
         
         st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
         
         if st.button("Solicitar Código de Vinculación", type="primary", use_container_width=True):
             if not gen_email or not gen_client_id:
-                st.warning("Completa al menos el correo electrónico y el Client ID.")
+                st.warning("Completa el correo electrónico y pega el Client ID de la aplicación.")
             else:
                 url_device = "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode"
                 scopes = "offline_access Mail.Read"
@@ -741,7 +759,7 @@ with tab_generador:
                         st.session_state["user_code"] = datos_dev["user_code"]
                         st.session_state["verification_uri"] = datos_dev.get("verification_uri", "https://microsoft.com/devicelogin")
                     else:
-                        st.error("Microsoft rechazó la generación del código.")
+                        st.error("Microsoft rechazó la generación del código. Verifica que el Client ID sea válido.")
                         st.json(datos_dev)
                 except Exception as e:
                     st.error(f"Error de conexión: {str(e)}")
