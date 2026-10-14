@@ -314,7 +314,8 @@ with tab_generador:
     
     if st.button("1️⃣ Solicitar Código de Vinculación", use_container_width=True):
         url_device = "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode"
-        scopes = "offline_access https://outlook.office.com/IMAP.AccessAsUser.All https://graph.microsoft.com/Mail.Read"
+        # Ámbito simplificado y compatible sin conflictos
+        scopes = "offline_access Mail.Read"
         r = requests.post(url_device, data={"client_id": gen_client_id.strip(), "scope": scopes})
         datos_dev = r.json()
         
@@ -323,7 +324,7 @@ with tab_generador:
             st.session_state["user_code"] = datos_dev["user_code"]
             st.session_state["verification_uri"] = datos_dev.get("verification_uri", "https://microsoft.com/devicelogin")
         else:
-            st.error("Ese Client ID no permite vinculación directa. Prueba con el Client ID: d3590ed6-52b3-4102-aeff-aad2292ab01c")
+            st.error("Ese Client ID no permite vinculación directa.")
             st.json(datos_dev)
             
     if "user_code" in st.session_state:
@@ -335,7 +336,7 @@ with tab_generador:
                 🔗 Paso B: Abrir Microsoft Login e ingresar código
             </a>
             <div style="font-size: 12px; color: #6b7280; margin-top: 10px;">
-                (Abre el enlace en ventana de incógnito para que no se mezcle con tu correo personal, inicia sesión con <b>{gen_email or 'el correo'}</b> y acepta los permisos).
+                (Abre el enlace en ventana de incógnito, inicia sesión con <b>{gen_email or 'el correo'}</b> y acepta los permisos).
             </div>
         </div>
         """, unsafe_allow_html=True)
@@ -353,6 +354,8 @@ with tab_generador:
                 linea_final = f"{gen_email.strip()}|{gen_pass.strip()}|{nuevo_rt}|{gen_client_id.strip()}"
                 st.success("✅ ¡Nuevo Refresh Token generado con éxito! Copia tu nueva línea:")
                 st.code(linea_final, language="text")
+                # Limpiar el código usado para que no se repita
+                del st.session_state["user_code"]
             else:
                 st.warning("Todavía no has completado el inicio de sesión en el enlace de Microsoft o el código expiró.")
                 with st.expander("Ver respuesta de Microsoft"):
