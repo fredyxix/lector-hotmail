@@ -5,111 +5,157 @@ import imaplib
 import email
 from email.header import decode_header
 
-st.set_page_config(page_title="Quick Read Hotmail", layout="centered")
+st.set_page_config(page_title="Outlook QuickReader", page_icon="⚡", layout="centered")
 
-css_styles = """
+# Estilos UX/UI modernos estilo SaaS (Minimalista, tipografía limpia y bordes refinados)
+modern_css = """
 <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
 <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
-<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css" />
 <style>
-.header-container {
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+
+html, body, [class*="st-"] {
+    font-family: 'Plus Jakarta Sans', sans-serif !important;
+}
+
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+.main-card {
+    background: #ffffff;
+    border: 1px solid #eaeaea;
+    border-radius: 16px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
+    margin-bottom: 20px;
+}
+
+.app-header {
     display: flex;
     align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
+    gap: 14px;
+    margin-bottom: 24px;
+    border-bottom: 1px solid #f0f0f0;
+    padding-bottom: 18px;
 }
-.icon-box {
-    background-color: #fff0e6;
-    color: #ff5500;
-    width: 54px;
-    height: 54px;
-    border-radius: 14px;
+
+.app-logo {
+    width: 48px;
+    height: 48px;
+    background: linear-gradient(135deg, #FF6B35 0%, #F25C05 100%);
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 28px;
-    flex-shrink: 0;
+    color: white;
+    font-size: 22px;
+    box-shadow: 0 4px 12px rgba(242, 92, 5, 0.2);
 }
-.header-title {
-    margin: 0 !important;
-    padding: 0 !important;
-    font-size: 24px !important;
-    font-weight: 700 !important;
-    color: #1f2937 !important;
-    line-height: 1.2 !important;
+
+.app-title {
+    font-size: 20px;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+    letter-spacing: -0.3px;
 }
-.header-subtitle {
-    margin: 4px 0 0 0 !important;
-    font-size: 14px !important;
-    color: #6b7280 !important;
+
+.app-subtitle {
+    font-size: 13px;
+    color: #6b7280;
+    margin: 2px 0 0 0;
 }
-.label-title {
+
+.stTabs [data-baseweb="tab-list"] {
+    gap: 8px;
+    background-color: #f8fafc;
+    padding: 6px;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.stTabs [data-baseweb="tab"] {
+    height: 38px;
+    border-radius: 8px;
+    color: #64748b;
     font-weight: 600;
-    font-size: 14px;
-    color: #1f2937;
-    margin-bottom: 8px;
-    display: flex;
-    align-items: center;
-    gap: 6px;
+    font-size: 13px;
+    border: none !important;
 }
+
+.stTabs [aria-selected="true"] {
+    background-color: #ffffff !important;
+    color: #0f172a !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+div[data-baseweb="textarea"] textarea, div[data-baseweb="input"] input {
+    border-radius: 10px !important;
+    border-color: #cbd5e1 !important;
+    font-size: 14px !important;
+    padding: 12px !important;
+}
+div[data-baseweb="textarea"] textarea:focus, div[data-baseweb="input"] input:focus {
+    border-color: #f25c05 !important;
+    box-shadow: 0 0 0 3px rgba(242, 92, 5, 0.1) !important;
+}
+
 div.stButton > button {
-    background-color: #f25c05 !important;
+    background: #f25c05 !important;
     color: white !important;
     font-weight: 600 !important;
     border-radius: 10px !important;
     border: none !important;
-    padding: 14px 24px !important;
+    padding: 12px 20px !important;
     width: 100% !important;
-    font-size: 16px !important;
-    box-shadow: 0 4px 10px rgba(242, 92, 5, 0.25) !important;
+    font-size: 14px !important;
+    box-shadow: 0 4px 12px rgba(242, 92, 5, 0.2) !important;
+    transition: all 0.2s ease;
 }
 div.stButton > button:hover {
-    background-color: #d95002 !important;
-    color: white !important;
+    background: #d95002 !important;
+    box-shadow: 0 6px 16px rgba(242, 92, 5, 0.3) !important;
 }
-div.stButton > button p {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    margin: 0;
-    font-size: 16px !important;
-    font-weight: 600 !important;
-}
-.empty-box {
+
+.empty-state {
     text-align: center;
-    padding: 45px 20px;
-    border: 1px solid #e5e7eb;
-    border-radius: 14px;
-    background-color: #fafafa;
-    color: #6b7280;
-    margin-top: 20px;
-}
-.code-card {
-    background-color: #fff7ed;
-    border: 1px solid #fed7aa;
+    padding: 40px 20px;
+    background: #fafafa;
+    border: 1px dashed #e2e8f0;
     border-radius: 12px;
-    padding: 18px;
-    margin: 15px 0;
-    text-align: center;
+    color: #64748b;
+    margin-top: 16px;
+}
+.empty-state-title {
+    font-size: 16px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 4px;
+}
+.empty-state-desc {
+    font-size: 13px;
+    color: #64748b;
+    margin: 0;
 }
 </style>
 """
-st.markdown(css_styles, unsafe_allow_html=True)
+st.markdown(modern_css, unsafe_allow_html=True)
 
 st.markdown("""
-<div class="header-container">
-    <div class="icon-box">
-        <i class="ph-duotone ph-envelope-open"></i>
+<div class="main-card">
+    <div class="app-header">
+        <div class="app-logo">
+            <i class="ph-duotone ph-envelope-simple-open"></i>
+        </div>
+        <div>
+            <h1 class="app-title">Outlook QuickReader</h1>
+            <p class="app-subtitle">Gestión segura y lectura rápida por tokens OAuth2</p>
+        </div>
     </div>
-    <div>
-        <div class="header-title">Quick Read Hotmail</div>
-        <div class="header-subtitle">Quick access & OAuth2 Token Generator</div>
-    </div>
-</div>
 """, unsafe_allow_html=True)
 
-tab_lector, tab_generador = st.tabs(["📩 Read Emails", "🔑 Generar Nuevo Token"])
+tab_lector, tab_generador = st.tabs(["Bandeja de Entrada", "Generar Credencial / Token"])
 
 def obtener_access_token_multivia(client_id, refresh_token):
     endpoints = [
@@ -225,35 +271,35 @@ def leer_correos_imap(correo, access_token, cantidad=10):
     return lista_correos
 
 with tab_lector:
-    st.markdown('<div class="label-title"><i class="ph ph-key"></i> Email Credentials</div>', unsafe_allow_html=True)
+    st.markdown("<p style='font-weight: 600; font-size: 13px; color: #334155; margin-bottom: 6px;'>Credenciales de acceso</p>", unsafe_allow_html=True)
     credenciales = st.text_area(
-        "Email Credentials",
+        "Credenciales",
         placeholder="email|password|refresh_token|client_id",
-        height=115,
+        height=100,
         label_visibility="collapsed"
     )
 
-    if st.button("✉️ Read Emails", use_container_width=True):
+    if st.button("Consultar Bandeja de Entrada"):
         if not credenciales or "|" not in credenciales:
-            st.warning("Ingresa los datos en el formato exacto: email|password|refresh_token|client_id")
+            st.warning("Formato requerido: email|password|refresh_token|client_id")
         else:
             partes = [p.strip() for p in credenciales.strip().split("|")]
             if len(partes) < 4:
-                st.error("Formato incompleto. Asegúrate de incluir las 4 partes separadas por '|'.")
+                st.error("Faltan campos. Asegúrate de incluir las 4 partes separadas por '|'.")
             else:
                 correo, password, refresh_token, client_id = partes[0], partes[1], partes[2], partes[3]
-                with st.spinner("Autenticando y buscando mensajes en Microsoft..."):
+                with st.spinner("Estableciendo conexión cifrada con Microsoft..."):
                     token_data = obtener_access_token_multivia(client_id, refresh_token)
                     
                     if "access_token" not in token_data:
-                        st.error("❌ El refresh_token ha expirado (invalid_grant). Ve a la pestaña '🔑 Generar Nuevo Token' arriba para renovarlo con tu contraseña.")
-                        with st.expander("Detalle técnico devuelto por Microsoft"):
+                        st.error("El token de sesión ha expirado (invalid_grant). Utiliza la pestaña superior para generar uno nuevo.")
+                        with st.expander("Ver diagnóstico técnico"):
                             st.json(token_data)
                     else:
                         access_token = token_data["access_token"]
                         nuevo_refresh = token_data.get("refresh_token", refresh_token)
                         
-                        with st.expander("🔄 Ver credencial con Token Renovado (Guárdalo para que no expire)"):
+                        with st.expander("Token actualizado (copia para conservar sesión activa)"):
                             st.code(f"{correo}|{password}|{nuevo_refresh}|{client_id}", language="text")
                             
                         try:
@@ -263,85 +309,75 @@ with tab_lector:
                                 
                             if not correos:
                                 st.markdown("""
-                                <div class="empty-box">
-                                    <i class="ph-fill ph-tray" style="font-size: 48px; color: #d1d5db;"></i>
-                                    <div style="margin: 12px 0 4px 0; color: #1f2937; font-size: 18px; font-weight: 700;">No Emails Found</div>
-                                    <div style="margin: 0; font-size: 14px;">The inbox is currently empty</div>
+                                <div class="empty-state">
+                                    <div class="empty-state-title">Bandeja vacía</div>
+                                    <p class="empty-state-desc">No se encontraron mensajes recientes en esta cuenta.</p>
                                 </div>
                                 """, unsafe_allow_html=True)
                             else:
-                                st.markdown(f"""
-                                <div style="display:flex; align-items:center; gap:8px; color:#059669; font-weight:600; margin: 15px 0;">
-                                    <i class="ph-fill ph-check-circle" style="font-size: 20px;"></i>
-                                    <span>{len(correos)} correos recientes cargados de {correo}</span>
-                                </div>
-                                """, unsafe_allow_html=True)
+                                st.markdown(f"<p style='color: #059669; font-weight: 600; font-size: 13px; margin: 16px 0;'>✓ Sincronización exitosa: {len(correos)} mensajes recuperados.</p>", unsafe_allow_html=True)
                                 
                                 for idx, c in enumerate(correos):
                                     with st.expander(f"{c['asunto']}  —  {c['remitente']}", expanded=(idx == 0)):
-                                        st.markdown(f"""
-                                        <div style="font-size: 13px; color: #6b7280; margin-bottom: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
-                                            <span><i class="ph ph-user"></i> {c['remitente']}</span>
-                                            <span><i class="ph ph-calendar-blank"></i> {c['fecha']}</span>
-                                        </div>
-                                        """, unsafe_allow_html=True)
-                                        st.components.v1.html(c["cuerpo"], height=350, scrolling=True)
+                                        st.markdown(f"<p style='color: #64748b; font-size: 12px; margin-bottom: 8px;'>Remitente: {c['remitente']} | Fecha: {c['fecha']}</p>", unsafe_allow_html=True)
+                                        st.components.v1.html(c["cuerpo"], height=320, scrolling=True)
                         except Exception as e:
-                            st.error(f"Error al abrir bandeja: {str(e)}")
+                            st.error(f"Error de lectura: {str(e)}")
     else:
         st.markdown("""
-        <div class="empty-box">
-            <i class="ph-fill ph-tray" style="font-size: 52px; color: #d1d5db;"></i>
-            <div style="margin: 12px 0 6px 0; color: #1f2937; font-size: 18px; font-weight: 700;">No Emails Yet</div>
-            <div style="margin: 0; font-size: 14px;">Enter your credentials above to read your emails</div>
+        <div class="empty-state">
+            <div class="empty-state-title">Sin actividad</div>
+            <p class="empty-state-desc">Ingresa tus credenciales arriba para consultar los correos.</p>
         </div>
         """, unsafe_allow_html=True)
 
 with tab_generador:
-    st.markdown("### 🔑 Generar un nuevo Refresh Token")
-    st.caption("Si una cuenta te da error `invalid_grant`, genera aquí un token nuevo iniciando sesión con su correo y contraseña.")
+    st.markdown("<p style='font-size: 14px; font-weight: 600; color: #1e293b; margin-bottom: 4px;'>Generador de Refresh Token OAuth2</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size: 13px; color: #64748b; margin-bottom: 16px;'>Obtén un nuevo token válido iniciando sesión de forma segura mediante código de dispositivo.</p>", unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
-        gen_email = st.text_input("Correo (Email)", placeholder="ejemplo@outlook.com")
+        gen_email = st.text_input("Correo electrónico", placeholder="nombre@outlook.com")
     with col2:
-        gen_pass = st.text_input("Contraseña (Password)", placeholder="TuContraseña123")
+        gen_pass = st.text_input("Contraseña", type="password", placeholder="••••••••")
         
     gen_client_id = st.text_input(
-        "Client ID (Deja el predeterminado si el tuyo da error)", 
+        "Client ID", 
         value="9e5f94bc-e8a4-4e73-b8be-63364c29d753"
     )
     
-    if st.button("1️⃣ Solicitar Código de Vinculación", use_container_width=True):
-        url_device = "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode"
-        # Ámbito simplificado y compatible sin conflictos
-        scopes = "offline_access Mail.Read"
-        r = requests.post(url_device, data={"client_id": gen_client_id.strip(), "scope": scopes})
-        datos_dev = r.json()
-        
-        if "user_code" in datos_dev:
-            st.session_state["device_code"] = datos_dev["device_code"]
-            st.session_state["user_code"] = datos_dev["user_code"]
-            st.session_state["verification_uri"] = datos_dev.get("verification_uri", "https://microsoft.com/devicelogin")
+    if st.button("Generar Código de Autorización"):
+        if not gen_email or not gen_pass:
+            st.warning("Por favor completa el correo y la contraseña.")
         else:
-            st.error("Ese Client ID no permite vinculación directa.")
-            st.json(datos_dev)
+            url_device = "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode"
+            scopes = "offline_access Mail.Read"
+            r = requests.post(url_device, data={"client_id": gen_client_id.strip(), "scope": scopes})
+            datos_dev = r.json()
+            
+            if "user_code" in datos_dev:
+                st.session_state["device_code"] = datos_dev["device_code"]
+                st.session_state["user_code"] = datos_dev["user_code"]
+                st.session_state["verification_uri"] = datos_dev.get("verification_uri", "https://microsoft.com/devicelogin")
+            else:
+                st.error("Error al solicitar código a Microsoft.")
+                st.json(datos_dev)
             
     if "user_code" in st.session_state:
         st.markdown(f"""
-        <div class="code-card">
-            <div style="font-size: 14px; color: #9a3412; margin-bottom: 6px;">Paso A: Copia este código de vinculación:</div>
-            <div style="font-size: 28px; font-weight: 800; letter-spacing: 3px; color: #ea580c; margin-bottom: 12px;">{st.session_state['user_code']}</div>
-            <a href="{st.session_state['verification_uri']}" target="_blank" style="display: inline-block; background-color: #1f2937; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">
-                🔗 Paso B: Abrir Microsoft Login e ingresar código
+        <div style="background: #fff7ed; border: 1px solid #ffedd5; border-radius: 12px; padding: 20px; text-align: center; margin-top: 16px;">
+            <p style="font-size: 13px; color: #c2410c; font-weight: 600; margin-bottom: 4px;">Código de verificación:</p>
+            <div style="font-size: 32px; font-weight: 800; letter-spacing: 4px; color: #ea580c; margin-bottom: 16px;">{st.session_state['user_code']}</div>
+            <a href="{st.session_state['verification_uri']}" target="_blank" style="display: inline-block; background: #0f172a; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px;">
+                Abrir portal de Microsoft
             </a>
-            <div style="font-size: 12px; color: #6b7280; margin-top: 10px;">
-                (Abre el enlace en ventana de incógnito, inicia sesión con <b>{gen_email or 'el correo'}</b> y acepta los permisos).
-            </div>
+            <p style="font-size: 12px; color: #64748b; margin-top: 12px;">
+                Abre este enlace en modo incógnito, inicia sesión con <b>{gen_email}</b> e ingresa el código.
+            </p>
         </div>
         """, unsafe_allow_html=True)
         
-        if st.button("2️⃣ Ya inicié sesión, ¡Obtener mi Nuevo Token!", use_container_width=True):
+        if st.button("Confirmar inicio de sesión y obtener credencial"):
             url_token = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
             r_tok = requests.post(url_token, data={
                 "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
@@ -352,11 +388,8 @@ with tab_generador:
             if "refresh_token" in res_tok:
                 nuevo_rt = res_tok["refresh_token"]
                 linea_final = f"{gen_email.strip()}|{gen_pass.strip()}|{nuevo_rt}|{gen_client_id.strip()}"
-                st.success("✅ ¡Nuevo Refresh Token generado con éxito! Copia tu nueva línea:")
+                st.success("¡Credencial generada exitosamente!")
                 st.code(linea_final, language="text")
-                # Limpiar el código usado para que no se repita
                 del st.session_state["user_code"]
             else:
-                st.warning("Todavía no has completado el inicio de sesión en el enlace de Microsoft o el código expiró.")
-                with st.expander("Ver respuesta de Microsoft"):
-                    st.json(res_tok)
+                st.info("Aún no se ha completado la autorización en la ventana de Microsoft.")
