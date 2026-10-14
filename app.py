@@ -109,7 +109,6 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-# Pestañas para separar el Lector del Generador de nuevos tokens
 tab_lector, tab_generador = st.tabs(["📩 Read Emails", "🔑 Generar Nuevo Token"])
 
 def obtener_access_token_multivia(client_id, refresh_token):
@@ -225,7 +224,6 @@ def leer_correos_imap(correo, access_token, cantidad=10):
     mail.logout()
     return lista_correos
 
-# ================= PESTAÑA 1: LECTOR DE CORREOS =================
 with tab_lector:
     st.markdown('<div class="label-title"><i class="ph ph-key"></i> Email Credentials</div>', unsafe_allow_html=True)
     credenciales = st.text_area(
@@ -255,7 +253,6 @@ with tab_lector:
                         access_token = token_data["access_token"]
                         nuevo_refresh = token_data.get("refresh_token", refresh_token)
                         
-                        # Mostrar línea renovada para que no expire
                         with st.expander("🔄 Ver credencial con Token Renovado (Guárdalo para que no expire)"):
                             st.code(f"{correo}|{password}|{nuevo_refresh}|{client_id}", language="text")
                             
@@ -300,7 +297,6 @@ with tab_lector:
         </div>
         """, unsafe_allow_html=True)
 
-# ================= PESTAÑA 2: GENERADOR DE NUEVO TOKEN =================
 with tab_generador:
     st.markdown("### 🔑 Generar un nuevo Refresh Token")
     st.caption("Si una cuenta te da error `invalid_grant`, genera aquí un token nuevo iniciando sesión con su correo y contraseña.")
@@ -311,7 +307,6 @@ with tab_generador:
     with col2:
         gen_pass = st.text_input("Contraseña (Password)", placeholder="TuContraseña123")
         
-    # Client ID público estándar compatible con lectura de correo OAuth2
     gen_client_id = st.text_input(
         "Client ID (Deja el predeterminado si el tuyo da error)", 
         value="9e5f94bc-e8a4-4e73-b8be-63364c29d753"
@@ -319,7 +314,7 @@ with tab_generador:
     
     if st.button("1️⃣ Solicitar Código de Vinculación", use_container_width=True):
         url_device = "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode"
-         scopes = "offline_access https://outlook.office.com/IMAP.AccessAsUser.All https://graph.microsoft.com/Mail.Read"
+        scopes = "offline_access https://outlook.office.com/IMAP.AccessAsUser.All https://graph.microsoft.com/Mail.Read"
         r = requests.post(url_device, data={"client_id": gen_client_id.strip(), "scope": scopes})
         datos_dev = r.json()
         
