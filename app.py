@@ -15,158 +15,158 @@ st.set_page_config(
 )
 
 # ==========================================
-# SISTEMA DE DISEÑO CSS (MODERNO, ALINEADO Y RESPONSIVO)
+# CSS AVANZADO COMPATIBLE CON STREAMLIT CLOUD (1.38+)
 # ==========================================
-modern_ui_css = """
+polished_css = """
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
-/* Tipografía global segura (SIN romper Material Icons como 'visibility') */
-html, body, .stApp, p, h1, h2, h3, h4, label, input, textarea, button {
+html, body, .stApp, p, label, input, textarea, button {
     font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
 }
 
-/* Fondo general con contraste suave para que las tarjetas blancas resalten */
 .stApp {
-    background-color: #f1f5f9;
-    color: #0f172a;
+    background-color: #f1f5f9 !important;
+    color: #0f172a !important;
 }
 
-/* Ocultar barra superior y pie de página de Streamlit */
 div[data-testid="stToolbar"], footer, header {
     display: none !important;
 }
 
-/* Contenedor principal centrado y bien proporcionado */
 .block-container {
-    max-width: 720px !important;
-    padding-top: 2rem !important;
-    padding-bottom: 4rem !important;
-    padding-left: 1.25rem !important;
-    padding-right: 1.25rem !important;
+    max-width: 700px !important;
+    padding-top: 1.5rem !important;
+    padding-bottom: 3.5rem !important;
+    padding-left: 1rem !important;
+    padding-right: 1rem !important;
 }
 
-/* Banner Principal Superior (Dark Slate) */
+/* Cabecera Principal Compacta y Elegante */
 .hero-header {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    border-radius: 16px;
-    padding: 24px 28px;
+    border-radius: 14px;
+    padding: 20px 24px;
     color: #ffffff;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    flex-wrap: wrap;
     gap: 12px;
-    margin-bottom: 20px;
-    box-shadow: 0 10px 25px -5px rgba(15, 23, 42, 0.15);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 16px;
+    box-shadow: 0 8px 20px -4px rgba(15, 23, 42, 0.14);
 }
 
 .hero-title {
-    font-size: 22px;
-    font-weight: 700;
+    font-size: 20px !important;
+    font-weight: 700 !important;
     color: #ffffff !important;
-    margin: 0;
+    margin: 0 !important;
+    padding: 0 !important;
     letter-spacing: -0.02em;
+    line-height: 1.2 !important;
 }
 
 .hero-subtitle {
-    font-size: 13px;
+    font-size: 12.5px !important;
     color: #94a3b8 !important;
-    margin: 4px 0 0 0;
-    font-weight: 400;
+    margin: 4px 0 0 0 !important;
+    font-weight: 400 !important;
 }
 
 .hero-badge {
     font-family: 'JetBrains Mono', monospace !important;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 600;
     color: #38bdf8;
     background: rgba(56, 189, 248, 0.12);
-    border: 1px solid rgba(56, 189, 248, 0.25);
-    padding: 6px 12px;
+    border: 1px solid rgba(56, 189, 248, 0.28);
+    padding: 5px 10px;
     border-radius: 999px;
     white-space: nowrap;
 }
 
-/* Pestañas estilo Segmented Control (Píldora moderna) */
-.stTabs [data-baseweb="tab-list"] {
-    background-color: #e2e8f0;
-    padding: 5px;
-    border-radius: 12px;
-    gap: 6px;
+/* Pestañas Segmented Control (Sin la línea roja de Streamlit) */
+div[data-testid="stTabs"] [data-baseweb="tab-list"] {
+    background-color: #e2e8f0 !important;
+    padding: 4px !important;
+    border-radius: 10px !important;
+    gap: 4px !important;
     border-bottom: none !important;
-    margin-bottom: 16px;
+    margin-bottom: 14px !important;
 }
 
-.stTabs [data-baseweb="tab"] {
-    flex: 1;
-    justify-content: center;
-    height: 40px;
-    border-radius: 8px !important;
+div[data-testid="stTabs"] button[data-baseweb="tab"] {
+    flex: 1 !important;
+    justify-content: center !important;
+    height: 38px !important;
+    border-radius: 7px !important;
     background-color: transparent !important;
     color: #475569 !important;
     font-weight: 600 !important;
-    font-size: 13.5px !important;
+    font-size: 13px !important;
     border: none !important;
-    transition: all 0.15s ease;
+    margin: 0 !important;
 }
 
-.stTabs [aria-selected="true"] {
+div[data-testid="stTabs"] button[data-baseweb="tab"][aria-selected="true"] {
     background-color: #ffffff !important;
-    color: #0f172a !important;
-    box-shadow: 0 2px 8px rgba(15, 23, 42, 0.08) !important;
+    color: #2563eb !important;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.08) !important;
 }
 
-.stTabs [data-baseweb="tab-highlight"] {
+/* Eliminar por completo la barrita roja inferior de Streamlit */
+div[data-testid="stTabs"] [data-baseweb="tab-highlight"],
+div[data-testid="stTabs"] [data-baseweb="tab-border"] {
     display: none !important;
+    background-color: transparent !important;
+    height: 0px !important;
 }
 
-/* Tarjetas blancas (st.container(border=True)) */
-div[data-testid="stVerticalBlockBorderWrapper"] {
+/* Tarjetas Blancas Reales (Soporte para todas las versiones de Streamlit) */
+div[data-testid="stVerticalBlockBorderWrapper"],
+div[class*="st-key-card_"] {
     background-color: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
-    border-radius: 16px !important;
-    padding: 22px !important;
-    box-shadow: 0 4px 12px -2px rgba(15, 23, 42, 0.04) !important;
-    margin-bottom: 16px !important;
+    border-radius: 14px !important;
+    padding: 20px !important;
+    box-shadow: 0 2px 10px rgba(15, 23, 42, 0.03) !important;
 }
 
-/* Etiquetas de los campos (Labels) perfectamente alineadas */
+/* Evitar que Streamlit agrande títulos con h2/h3 usando clases div puras */
+.card-header {
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.card-title {
+    font-size: 15px !important;
+    font-weight: 700 !important;
+    color: #0f172a !important;
+    margin: 0 0 3px 0 !important;
+    line-height: 1.3 !important;
+}
+
+.card-desc {
+    font-size: 12.5px !important;
+    color: #64748b !important;
+    margin: 0 !important;
+    line-height: 1.4 !important;
+}
+
+/* Labels e Inputs con contraste nítido */
 div[data-testid="stWidgetLabel"] p {
-    font-size: 13px !important;
+    font-size: 12.5px !important;
     font-weight: 600 !important;
-    color: #1e293b !important;
-    margin-bottom: 4px !important;
+    color: #334155 !important;
 }
 
-/* Contenedores de Inputs y Textareas limpios (Sin fondo gris feo) */
 div[data-baseweb="input"],
 div[data-baseweb="textarea"],
 div[data-baseweb="select"] > div {
     background-color: #f8fafc !important;
-    border: 1.5px solid #cbd5e1 !important;
-    border-radius: 10px !important;
-    transition: all 0.15s ease !important;
-}
-
-div[data-baseweb="input"] > div {
-    background-color: transparent !important;
-    border: none !important;
-}
-
-div[data-baseweb="input"] input,
-div[data-baseweb="textarea"] textarea {
-    background-color: transparent !important;
-    color: #0f172a !important;
-    font-size: 13.5px !important;
-    padding: 10px 12px !important;
-}
-
-div[data-baseweb="textarea"] textarea {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 12.5px !important;
-    line-height: 1.5 !important;
+    border: 1px solid #cbd5e1 !important;
+    border-radius: 8px !important;
 }
 
 div[data-baseweb="input"]:focus-within,
@@ -177,166 +177,145 @@ div[data-baseweb="select"] > div:focus-within {
     box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12) !important;
 }
 
-/* Ocultar el botón de mostrar contraseña si la fuente de iconos falla en móvil */
-div[data-baseweb="input"] button {
-    display: none !important;
+div[data-baseweb="textarea"] textarea {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
 }
 
-/* Botón Primario (Modern Blue / Dark Hover) */
+/* Expanders (Acordeones) con fondo blanco limpio */
+div[data-testid="stExpander"] {
+    background-color: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.02) !important;
+    margin-bottom: 12px !important;
+}
+
+div[data-testid="stExpander"] summary p {
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+}
+
+/* Botones Primarios y Secundarios */
 div.stButton > button[kind="primary"] {
     background: linear-gradient(180deg, #2563eb 0%, #1d4ed8 100%) !important;
     color: #ffffff !important;
     font-weight: 600 !important;
-    font-size: 14px !important;
-    height: 44px !important;
-    border-radius: 10px !important;
+    font-size: 13.5px !important;
+    height: 42px !important;
+    border-radius: 8px !important;
     border: 1px solid #1e40af !important;
-    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25) !important;
-    transition: all 0.15s ease !important;
+    box-shadow: 0 2px 5px rgba(37, 99, 235, 0.2) !important;
 }
 
 div.stButton > button[kind="primary"]:hover {
     background: linear-gradient(180deg, #1d4ed8 0%, #1e3a8a 100%) !important;
-    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35) !important;
 }
 
-/* Botón Secundario */
 div.stButton > button[kind="secondary"] {
-    background-color: #ffffff !important;
+    background-color: #f8fafc !important;
     color: #334155 !important;
     font-weight: 600 !important;
-    font-size: 13.5px !important;
-    height: 42px !important;
-    border-radius: 10px !important;
-    border: 1.5px solid #cbd5e1 !important;
+    font-size: 13px !important;
+    height: 38px !important;
+    border-radius: 8px !important;
+    border: 1px solid #cbd5e1 !important;
 }
 
-div.stButton > button[kind="secondary"]:hover {
-    background-color: #f8fafc !important;
-    border-color: #94a3b8 !important;
+/* Barra de Estado de Sincronización */
+.sync-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-size: 12.5px;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* Cabecera del Correo Seleccionado */
+.mail-header-box {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 12px;
+}
+
+.mail-subject-line {
+    font-size: 15.5px !important;
+    font-weight: 700 !important;
     color: #0f172a !important;
+    margin: 0 0 6px 0 !important;
+    line-height: 1.35 !important;
 }
 
-/* Encabezado interno de secciones */
-.section-header {
-    margin-bottom: 16px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid #f1f5f9;
-}
-
-.section-title {
-    font-size: 16px;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0 0 4px 0;
-}
-
-.section-desc {
-    font-size: 13px;
+.mail-meta-line {
+    display: flex;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 6px;
+    font-size: 12px;
     color: #64748b;
-    margin: 0;
 }
 
-/* Tarjeta de estado vacío elegante */
+.mail-from-strong {
+    color: #1e293b;
+    font-weight: 600;
+}
+
+/* Tarjeta Vacía */
 .empty-state-card {
     background: #ffffff;
     border: 1.5px dashed #cbd5e1;
-    border-radius: 16px;
-    padding: 40px 24px;
+    border-radius: 14px;
+    padding: 36px 20px;
     text-align: center;
     margin-top: 8px;
 }
 
 .empty-badge {
     display: inline-block;
-    font-size: 11px;
+    font-size: 10.5px;
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    color: #475569;
-    background: #f1f5f9;
-    padding: 4px 10px;
-    border-radius: 6px;
+    color: #2563eb;
+    background: #eff6ff;
+    border: 1px solid #bfdbfe;
+    padding: 3px 10px;
+    border-radius: 999px;
     margin-bottom: 10px;
 }
 
-.empty-title {
-    font-size: 15px;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0 0 6px 0;
-}
-
-.empty-text {
-    font-size: 13px;
-    color: #64748b;
-    max-width: 420px;
-    margin: 0 auto;
-    line-height: 1.5;
-}
-
-/* Visor de Correo */
-.mail-card-header {
-    background: #f8fafc;
-    border: 1px solid #e2e8f0;
-    border-radius: 12px;
-    padding: 16px 18px;
-    margin-bottom: 14px;
-}
-
-.mail-subject {
-    font-size: 16px;
-    font-weight: 700;
-    color: #0f172a;
-    margin: 0 0 8px 0;
-    line-height: 1.35;
-}
-
-.mail-meta {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 8px;
-    font-size: 12.5px;
-    color: #64748b;
-}
-
-.mail-sender-pill {
-    color: #1e293b;
-    font-weight: 600;
-}
-
-/* Panel de Código de Dispositivo OAuth */
+/* Caja de Código OAuth */
 .oauth-box {
     background: #f8fafc;
-    border: 1.5px solid #cbd5e1;
-    border-radius: 14px;
-    padding: 24px 20px;
+    border: 1px solid #cbd5e1;
+    border-radius: 12px;
+    padding: 20px;
     text-align: center;
-    margin: 18px 0;
-}
-
-.oauth-step {
-    font-size: 11.5px;
-    font-weight: 700;
-    color: #2563eb;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    margin: 14px 0;
 }
 
 .oauth-code {
     font-family: 'JetBrains Mono', monospace !important;
-    font-size: 28px;
+    font-size: 26px;
     font-weight: 700;
     letter-spacing: 4px;
     color: #0f172a;
     background: #ffffff;
     border: 1.5px solid #94a3b8;
-    border-radius: 10px;
-    padding: 10px 22px;
+    border-radius: 8px;
+    padding: 8px 20px;
     display: inline-block;
-    margin: 12px 0 16px 0;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    margin: 10px 0 14px 0;
 }
 
 .oauth-link {
@@ -345,28 +324,13 @@ div.stButton > button[kind="secondary"]:hover {
     color: #ffffff !important;
     text-decoration: none !important;
     font-weight: 600;
-    font-size: 13.5px;
-    padding: 10px 20px;
-    border-radius: 8px;
-}
-
-/* Píldora de estado conectado */
-.sync-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    background: #ecfdf5;
-    border: 1px solid #a7f3d0;
-    color: #065f46;
-    padding: 10px 16px;
-    border-radius: 10px;
     font-size: 13px;
-    font-weight: 600;
-    margin-bottom: 14px;
+    padding: 9px 18px;
+    border-radius: 8px;
 }
 </style>
 """
-st.markdown(modern_ui_css, unsafe_allow_html=True)
+st.markdown(polished_css, unsafe_allow_html=True)
 
 # ==========================================
 # INICIALIZACIÓN DE SESSION STATE
@@ -376,7 +340,8 @@ for key, default in {
     "metodo_usado": "",
     "credencial_actualizada": "",
     "credenciales_input": "",
-    "correo_idx": 0
+    "correo_idx": 0,
+    "correo_activo": ""
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
@@ -406,12 +371,12 @@ def envolver_html_correo(contenido_html):
         <style>
             body {{
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-                font-size: 14px;
+                font-size: 13.5px;
                 line-height: 1.6;
                 color: #1e293b;
                 background-color: #ffffff;
                 margin: 0;
-                padding: 12px;
+                padding: 8px 4px;
                 word-wrap: break-word;
             }}
             a {{ color: #2563eb; }}
@@ -419,7 +384,7 @@ def envolver_html_correo(contenido_html):
             pre {{
                 white-space: pre-wrap;
                 font-family: ui-monospace, monospace;
-                font-size: 13px;
+                font-size: 12.5px;
                 background: #f8fafc;
                 padding: 12px;
                 border-radius: 8px;
@@ -547,13 +512,13 @@ def leer_correos_imap(correo, access_token, cantidad=15):
     return lista_correos
 
 # ==========================================
-# CABECERA SUPERIOR (HERO BANNER)
+# CABECERA SUPERIOR
 # ==========================================
 st.markdown("""
 <div class="hero-header">
     <div>
-        <h1 class="hero-title">Outlook QuickReader</h1>
-        <p class="hero-subtitle">Sincronización directa por Graph API e IMAP XOAUTH2</p>
+        <div class="hero-title">Outlook QuickReader</div>
+        <div class="hero-subtitle">Sincronización directa por Graph API e IMAP XOAUTH2</div>
     </div>
     <span class="hero-badge">OAUTH 2.0</span>
 </div>
@@ -565,19 +530,19 @@ tab_lector, tab_generador = st.tabs(["Bandeja de Entrada", "Generador de Token O
 # PESTAÑA 1: BANDEJA DE ENTRADA
 # ==========================================
 with tab_lector:
-    with st.container(border=True):
-        st.markdown("""
-        <div class="section-header">
-            <h2 class="section-title">Credenciales de conexión</h2>
-            <p class="section-desc">Pega tu línea de acceso completa para autenticar y descargar tu bandeja.</p>
-        </div>
-        """, unsafe_allow_html=True)
-        
+    hay_sesion = st.session_state["correos"] is not None
+    titulo_expander = (
+        f"Cuenta conectada: {st.session_state['correo_activo']} (Cambiar o recargar)"
+        if hay_sesion else "Credenciales de conexión"
+    )
+
+    # Si aún no hay correos, se muestra abierto; una vez sincronizado, se pliega para dar prioridad al lector
+    with st.expander(titulo_expander, expanded=not hay_sesion):
         credenciales = st.text_area(
             "Cadena de acceso (email|password|refresh_token|client_id)",
             value=st.session_state["credenciales_input"],
             placeholder="usuario@outlook.com|contraseña|M.C501...|9e5f94bc-e8a4-4e73-b8be-63364c29d753",
-            height=95
+            height=88
         )
         st.session_state["credenciales_input"] = credenciales
         
@@ -613,6 +578,7 @@ with tab_lector:
                         access_token = token_data["access_token"]
                         nuevo_refresh = token_data.get("refresh_token", refresh_token)
                         st.session_state["credencial_actualizada"] = f"{correo}|{password}|{nuevo_refresh}|{client_id}"
+                        st.session_state["correo_activo"] = correo
                         
                         try:
                             correos = leer_via_graph_api(access_token, cantidad=limite_num)
@@ -624,10 +590,11 @@ with tab_lector:
                                 
                             st.session_state["correos"] = correos
                             st.session_state["correo_idx"] = 0
+                            st.rerun()
                         except Exception as e:
                             st.error(f"Error al leer la bandeja: {str(e)}")
 
-    # Mostrar Bandeja si hay sesión activa
+    # Renderizado del Visor de Correos
     if st.session_state["correos"] is not None:
         correos = st.session_state["correos"]
         
@@ -646,12 +613,12 @@ with tab_lector:
             st.markdown("""
             <div class="empty-state-card">
                 <span class="empty-badge">Bandeja vacía</span>
-                <h3 class="empty-title">No hay mensajes</h3>
-                <p class="empty-text">La cuenta se autenticó correctamente pero no tiene correos en la bandeja de entrada.</p>
+                <div class="card-title">No hay mensajes</div>
+                <p class="card-desc">La cuenta se autenticó correctamente pero no tiene correos en la bandeja de entrada.</p>
             </div>
             """, unsafe_allow_html=True)
         else:
-            with st.container(border=True):
+            with st.container(border=True, key="card_visor_correo"):
                 filtro = st.text_input(
                     "Buscar en la bandeja",
                     placeholder="Filtrar por asunto o remitente..."
@@ -670,7 +637,7 @@ with tab_lector:
                     def formatear_opcion(i):
                         c = correos_filtrados[i]
                         rem = c["remitente"].split("<")[0].strip() or c["remitente"]
-                        return f"{ i + 1 }. {c['asunto'][:55]}  —  {rem[:28]} ({c['fecha']})"
+                        return f"{ i + 1 }. {c['asunto'][:52]}  —  {rem[:26]} ({c['fecha']})"
 
                     seleccion = st.selectbox(
                         f"Seleccionar mensaje ({len(correos_filtrados)} disponibles)",
@@ -681,15 +648,15 @@ with tab_lector:
                     st.session_state["correo_idx"] = seleccion
                     correo_actual = correos_filtrados[seleccion]
 
-                    # Botones de navegación rápida Anterior / Siguiente
-                    col_prev, col_pos, col_next = st.columns([1, 1.5, 1])
+                    # Controles Anterior / Siguiente
+                    col_prev, col_pos, col_next = st.columns([1, 1.3, 1])
                     with col_prev:
                         if st.button("Anterior", type="secondary", disabled=(seleccion == 0), use_container_width=True):
                             st.session_state["correo_idx"] = max(0, seleccion - 1)
                             st.rerun()
                     with col_pos:
                         st.markdown(
-                            f"<div style='text-align:center; padding-top:10px; font-size:12.5px; font-weight:600; color:#64748b;'>Mensaje {seleccion + 1} de {len(correos_filtrados)}</div>",
+                            f"<div style='text-align:center; padding-top:9px; font-size:12px; font-weight:600; color:#64748b;'>Mensaje {seleccion + 1} de {len(correos_filtrados)}</div>",
                             unsafe_allow_html=True
                         )
                     with col_next:
@@ -697,17 +664,17 @@ with tab_lector:
                             st.session_state["correo_idx"] = min(len(correos_filtrados) - 1, seleccion + 1)
                             st.rerun()
 
-                    st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin: 14px 0;'>", unsafe_allow_html=True)
+                    st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin: 12px 0;'>", unsafe_allow_html=True)
 
                     asunto_seguro = html.escape(correo_actual["asunto"])
                     remitente_seguro = html.escape(correo_actual["remitente"])
                     fecha_segura = html.escape(correo_actual["fecha"])
 
                     st.markdown(f"""
-                    <div class="mail-card-header">
-                        <h3 class="mail-subject">{asunto_seguro}</h3>
-                        <div class="mail-meta">
-                            <span>De: <span class="mail-sender-pill">{remitente_seguro}</span></span>
+                    <div class="mail-header-box">
+                        <div class="mail-subject-line">{asunto_seguro}</div>
+                        <div class="mail-meta-line">
+                            <span>De: <span class="mail-from-strong">{remitente_seguro}</span></span>
                             <span>{fecha_segura}</span>
                         </div>
                     </div>
@@ -715,15 +682,15 @@ with tab_lector:
 
                     st.components.v1.html(
                         envolver_html_correo(correo_actual["cuerpo"]),
-                        height=440,
+                        height=460,
                         scrolling=True
                     )
     else:
         st.markdown("""
         <div class="empty-state-card">
             <span class="empty-badge">Listo para conectar</span>
-            <h3 class="empty-title">Ninguna sesión sincronizada</h3>
-            <p class="empty-text">Introduce tu cadena de credenciales en la tarjeta superior y pulsa "Sincronizar Bandeja de Entrada" para visualizar tus correos.</p>
+            <div class="card-title">Ninguna sesión sincronizada</div>
+            <p class="card-desc">Introduce tu cadena de credenciales arriba y pulsa "Sincronizar Bandeja de Entrada" para visualizar tus correos.</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -731,15 +698,14 @@ with tab_lector:
 # PESTAÑA 2: GENERADOR DE TOKEN OAUTH2
 # ==========================================
 with tab_generador:
-    with st.container(border=True):
+    with st.container(border=True, key="card_oauth_gen"):
         st.markdown("""
-        <div class="section-header">
-            <h2 class="section-title">Autorización por Código de Dispositivo (OAuth 2.0)</h2>
-            <p class="section-desc">Vincula tu cuenta oficial de Microsoft para obtener un Refresh Token nuevo sin exponer tus credenciales.</p>
+        <div class="card-header">
+            <div class="card-title">Autorización por Código de Dispositivo (OAuth 2.0)</div>
+            <div class="card-desc">Vincula tu cuenta oficial de Microsoft para obtener un Refresh Token nuevo sin exponer tus credenciales.</div>
         </div>
         """, unsafe_allow_html=True)
         
-        # Fila 1: 2 columnas limpias con etiquetas cortas que nunca se parten
         col_mail, col_pass = st.columns(2)
         with col_mail:
             gen_email = st.text_input(
@@ -753,13 +719,12 @@ with tab_generador:
                 placeholder="••••••••••••"
             )
             
-        # Fila 2: Client ID a ancho completo para que el UUID se lea entero sin cortarse
         gen_client_id = st.text_input(
             "Client ID de la aplicación (Azure AD / Thunderbird)",
             value="9e5f94bc-e8a4-4e73-b8be-63364c29d753"
         )
         
-        st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
+        st.markdown("<div style='height: 4px;'></div>", unsafe_allow_html=True)
         
         if st.button("Solicitar Código de Vinculación", type="primary", use_container_width=True):
             if not gen_email or not gen_client_id:
@@ -784,14 +749,16 @@ with tab_generador:
         if "user_code" in st.session_state:
             st.markdown(f"""
             <div class="oauth-box">
-                <div class="oauth-step">Paso 1 — Autorización en Microsoft</div>
+                <div style="font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.06em;">
+                    Paso 1 — Autorización en Microsoft
+                </div>
                 <div class="oauth-code">{st.session_state['user_code']}</div>
                 <div>
                     <a href="{st.session_state['verification_uri']}" target="_blank" class="oauth-link">
                         Abrir portal de activación de Microsoft
                     </a>
                 </div>
-                <p style="font-size: 12.5px; color: #64748b; margin: 14px 0 0 0;">
+                <p style="font-size: 12px; color: #64748b; margin: 12px 0 0 0;">
                     Abre el enlace en una pestaña de incógnito, inicia sesión con <b>{html.escape(gen_email)}</b> e introduce el código.
                 </p>
             </div>
@@ -827,7 +794,7 @@ with tab_generador:
                     st.rerun()
 
         if "credencial_generada_nueva" in st.session_state:
-            st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin: 16px 0;'>", unsafe_allow_html=True)
+            st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin: 14px 0;'>", unsafe_allow_html=True)
             st.success("Credencial generada exitosamente:")
             st.code(st.session_state["credencial_generada_nueva"], language="text")
             if st.button("Enviar esta credencial a la Bandeja de Entrada", type="secondary", use_container_width=True):
