@@ -8,8 +8,6 @@ from email.header import decode_header
 st.set_page_config(page_title="Outlook QuickReader", page_icon="⚡", layout="centered")
 
 modern_css = """
-<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
-<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 
@@ -138,6 +136,8 @@ div.stButton > button:hover {
     margin: 0;
 }
 </style>
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
 """
 st.markdown(modern_css, unsafe_allow_html=True)
 
