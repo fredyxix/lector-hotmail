@@ -5,7 +5,7 @@ import imaplib
 import email
 from email.header import decode_header
 from email.utils import parsedate_to_datetime
-from datetime import datetime
+from datetime import datetime, timezone
 import html
 
 st.set_page_config(
@@ -46,7 +46,7 @@ div[data-testid="stToolbar"], footer, header {
     padding-right: 1rem !important;
 }
 
-/* Cabecera Principal Compacta y Elegante */
+/* Cabecera Principal Limpia */
 .hero-header {
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
     border-radius: 14px;
@@ -71,25 +71,13 @@ div[data-testid="stToolbar"], footer, header {
 }
 
 .hero-subtitle {
-    font-size: 12.5px !important;
+    font-size: 13px !important;
     color: #94a3b8 !important;
     margin: 4px 0 0 0 !important;
     font-weight: 400 !important;
 }
 
-.hero-badge {
-    font-family: 'JetBrains Mono', monospace !important;
-    font-size: 10.5px;
-    font-weight: 600;
-    color: #38bdf8;
-    background: rgba(56, 189, 248, 0.12);
-    border: 1px solid rgba(56, 189, 248, 0.28);
-    padding: 5px 10px;
-    border-radius: 999px;
-    white-space: nowrap;
-}
-
-/* Pestañas Segmented Control (100% Azul / Blanco sin rojo de Streamlit) */
+/* Pestañas Segmented Control */
 div[data-testid="stTabs"] [data-baseweb="tab-list"] {
     background-color: #e2e8f0 !important;
     padding: 4px !important;
@@ -166,7 +154,7 @@ div[class*="st-key-card_"] {
     line-height: 1.4 !important;
 }
 
-/* Labels, Inputs y Placeholders discretos */
+/* Labels, Inputs y Placeholders */
 div[data-testid="stWidgetLabel"] p {
     font-size: 12.5px !important;
     font-weight: 600 !important;
@@ -201,19 +189,37 @@ div[data-baseweb="textarea"] textarea {
     line-height: 1.45 !important;
 }
 
-/* Expanders (Acordeones) con fondo blanco limpio */
+/* Expanders (Acordeones de Correos) */
 div[data-testid="stExpander"] {
     background-color: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 12px !important;
-    box-shadow: 0 1px 4px rgba(15, 23, 42, 0.02) !important;
-    margin-bottom: 12px !important;
+    box-shadow: 0 2px 6px rgba(15, 23, 42, 0.03) !important;
+    margin-bottom: 10px !important;
+    overflow: hidden;
+}
+
+div[data-testid="stExpander"] summary {
+    padding: 12px 16px !important;
+}
+
+div[data-testid="stExpander"] summary:hover {
+    background-color: #f8fafc !important;
 }
 
 div[data-testid="stExpander"] summary p {
-    font-size: 13px !important;
-    font-weight: 600 !important;
+    font-size: 13.5px !important;
+    font-weight: 500 !important;
     color: #1e293b !important;
+}
+
+div[data-testid="stExpander"] summary strong {
+    color: #0f172a !important;
+    font-weight: 700 !important;
+    background-color: #f1f5f9;
+    padding: 2px 7px;
+    border-radius: 6px;
+    font-size: 12px !important;
 }
 
 /* Botones Primarios y Secundarios */
@@ -254,10 +260,10 @@ div.stButton > button[kind="secondary"] {
     border-radius: 10px;
     font-size: 12.5px;
     font-weight: 600;
-    margin-bottom: 10px;
+    margin-bottom: 12px;
 }
 
-/* Cabecera del Correo Seleccionado */
+/* Cabecera Interna del Correo */
 .mail-header-box {
     background: #f8fafc;
     border: 1px solid #e2e8f0;
@@ -266,8 +272,52 @@ div.stButton > button[kind="secondary"] {
     margin-bottom: 12px;
 }
 
+.mail-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.badge-latest {
+    display: inline-block;
+    background: #2563eb;
+    color: #ffffff;
+    font-size: 10.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 3px 9px;
+    border-radius: 999px;
+}
+
+.badge-recent {
+    display: inline-block;
+    background: #e2e8f0;
+    color: #475569;
+    font-size: 10.5px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    padding: 3px 9px;
+    border-radius: 999px;
+}
+
+.date-highlight {
+    font-family: 'JetBrains Mono', monospace !important;
+    font-size: 12px;
+    font-weight: 700;
+    color: #1e40af;
+    background: #dbeafe;
+    border: 1px solid #bfdbfe;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+
 .mail-subject-line {
-    font-size: 15.5px !important;
+    font-size: 15px !important;
     font-weight: 700 !important;
     color: #0f172a !important;
     margin: 0 0 6px 0 !important;
@@ -275,10 +325,6 @@ div.stButton > button[kind="secondary"] {
 }
 
 .mail-meta-line {
-    display: flex;
-    justify-content: space-between;
-    flex-wrap: wrap;
-    gap: 6px;
     font-size: 12px;
     color: #64748b;
 }
@@ -312,7 +358,7 @@ div.stButton > button[kind="secondary"] {
     margin-bottom: 10px;
 }
 
-/* Caja de Código OAuth */
+/* Caja de Código de Vinculación */
 .oauth-box {
     background: #f8fafc;
     border: 1px solid #cbd5e1;
@@ -357,29 +403,29 @@ MAX_CORREOS = 5
 
 for key, default in {
     "correos": None,
-    "metodo_usado": "",
     "credencial_actualizada": "",
     "credenciales_input": "",
-    "correo_idx": 0,
     "correo_activo": ""
 }.items():
     if key not in st.session_state:
         st.session_state[key] = default
 
 # ==========================================
-# FUNCIONES DE CONEXIÓN Y LECTURA
+# FUNCIONES DE CONEXIÓN, FECHA Y ORDENAMIENTO
 # ==========================================
-def formatear_fecha(fecha_str):
+def parsear_fecha_y_timestamp(fecha_str):
     if not fecha_str:
-        return ""
+        return "Fecha desconocida", 0.0
     try:
         if "T" in fecha_str:
             dt = datetime.fromisoformat(fecha_str.replace("Z", "+00:00"))
-            return dt.strftime("%d %b %Y, %H:%M")
-        dt = parsedate_to_datetime(fecha_str)
-        return dt.strftime("%d %b %Y, %H:%M")
+        else:
+            dt = parsedate_to_datetime(fecha_str)
+        if dt.tzinfo is None:
+            dt = dt.replace(tzinfo=timezone.utc)
+        return dt.strftime("%d %b %Y, %H:%M"), dt.timestamp()
     except Exception:
-        return fecha_str[:22]
+        return fecha_str[:22], 0.0
 
 def envolver_html_correo(contenido_html):
     return f"""
@@ -448,7 +494,7 @@ def obtener_access_token_multivia(client_id, refresh_token):
 
 def leer_via_graph_api(access_token, cantidad=MAX_CORREOS):
     headers = {"Authorization": f"Bearer {access_token}"}
-    url = f"https://graph.microsoft.com/v1.0/me/messages?$top={cantidad}&$select=subject,from,receivedDateTime,body"
+    url = f"https://graph.microsoft.com/v1.0/me/messages?$top={cantidad}&$orderby=receivedDateTime desc&$select=subject,from,receivedDateTime,body"
     r = requests.get(url, headers=headers, timeout=12)
     if r.status_code != 200:
         return None
@@ -459,12 +505,15 @@ def leer_via_graph_api(access_token, cantidad=MAX_CORREOS):
         nombre = remitente_info.get("name", "").strip()
         direccion = remitente_info.get("address", "").strip()
         remitente = f"{nombre} <{direccion}>" if nombre and nombre != direccion else direccion
+        fecha_fmt, ts = parsear_fecha_y_timestamp(msg.get("receivedDateTime", ""))
         lista_correos.append({
             "asunto": msg.get("subject") or "(Sin asunto)",
             "remitente": remitente or "Desconocido",
-            "fecha": formatear_fecha(msg.get("receivedDateTime", "")),
+            "fecha": fecha_fmt,
+            "ts": ts,
             "cuerpo": msg.get("body", {}).get("content", "")
         })
+    lista_correos.sort(key=lambda x: x["ts"], reverse=True)
     return lista_correos
 
 def decodificar_texto(texto):
@@ -522,29 +571,31 @@ def leer_correos_imap(correo, access_token, cantidad=MAX_CORREOS):
         for response_part in msg_data:
             if isinstance(response_part, tuple):
                 msg = email.message_from_bytes(response_part[1])
+                fecha_fmt, ts = parsear_fecha_y_timestamp(msg.get("Date", ""))
                 lista_correos.append({
                     "asunto": decodificar_texto(msg.get("Subject", "(Sin asunto)")),
                     "remitente": decodificar_texto(msg.get("From", "Desconocido")),
-                    "fecha": formatear_fecha(msg.get("Date", "")),
+                    "fecha": fecha_fmt,
+                    "ts": ts,
                     "cuerpo": extraer_cuerpo(msg)
                 })
     mail.logout()
+    lista_correos.sort(key=lambda x: x["ts"], reverse=True)
     return lista_correos
 
 # ==========================================
-# CABECERA SUPERIOR
+# CABECERA SUPERIOR (SIN DETALLES TÉCNICOS)
 # ==========================================
 st.markdown("""
 <div class="hero-header">
     <div>
         <div class="hero-title">Outlook QuickReader</div>
-        <div class="hero-subtitle">Sincronización directa por Graph API e IMAP XOAUTH2</div>
+        <div class="hero-subtitle">Consulta rápida de bandeja de entrada</div>
     </div>
-    <span class="hero-badge">OAUTH 2.0</span>
 </div>
 """, unsafe_allow_html=True)
 
-tab_lector, tab_generador = st.tabs(["Bandeja de Entrada", "Generador de Token OAuth2"])
+tab_lector, tab_generador = st.tabs(["Bandeja de Entrada", "Generar Acceso"])
 
 # ==========================================
 # PESTAÑA 1: BANDEJA DE ENTRADA
@@ -552,8 +603,8 @@ tab_lector, tab_generador = st.tabs(["Bandeja de Entrada", "Generador de Token O
 with tab_lector:
     hay_sesion = st.session_state["correos"] is not None
     titulo_expander = (
-        f"Cuenta conectada: {st.session_state['correo_activo']} (Cambiar o recargar)"
-        if hay_sesion else "Credenciales de conexión"
+        f"Cuenta activa: {st.session_state['correo_activo']} (Cambiar cuenta)"
+        if hay_sesion else "Credenciales de acceso"
     )
 
     with st.expander(titulo_expander, expanded=not hay_sesion):
@@ -566,7 +617,7 @@ with tab_lector:
         st.session_state["credenciales_input"] = credenciales
         
         consultar_btn = st.button(
-            "Sincronizar Bandeja de Entrada (Últimos 5 correos)",
+            "Consultar últimos 5 correos",
             type="primary",
             use_container_width=True
         )
@@ -580,13 +631,11 @@ with tab_lector:
                 st.error("Faltan datos en la cadena. Verifica que incluya las 4 partes separadas por '|'.")
             else:
                 correo, password, refresh_token, client_id = partes[0], partes[1], partes[2], partes[3]
-                with st.spinner("Autenticando sesión OAuth2 con Microsoft..."):
+                with st.spinner("Sincronizando mensajes recientes..."):
                     token_data = obtener_access_token_multivia(client_id, refresh_token)
                     
                     if "access_token" not in token_data:
-                        st.error("El Refresh Token expiró o es inválido (invalid_grant). Genera uno nuevo en la pestaña 'Generador de Token OAuth2'.")
-                        with st.expander("Ver respuesta del servidor"):
-                            st.json(token_data)
+                        st.error("La sesión ha expirado. Genera una nueva credencial en la pestaña 'Generar Acceso'.")
                     else:
                         access_token = token_data["access_token"]
                         nuevo_refresh = token_data.get("refresh_token", refresh_token)
@@ -595,114 +644,96 @@ with tab_lector:
                         
                         try:
                             correos = leer_via_graph_api(access_token, cantidad=MAX_CORREOS)
-                            if correos is not None:
-                                st.session_state["metodo_usado"] = "Microsoft Graph API"
-                            else:
+                            if correos is None:
                                 correos = leer_correos_imap(correo, access_token, cantidad=MAX_CORREOS)
-                                st.session_state["metodo_usado"] = "IMAP XOAUTH2"
                                 
                             st.session_state["correos"] = correos[:MAX_CORREOS]
-                            st.session_state["correo_idx"] = 0
                             st.rerun()
                         except Exception as e:
-                            st.error(f"Error al leer la bandeja: {str(e)}")
+                            st.error(f"Error al cargar los mensajes: {str(e)}")
 
-    # Renderizado del Visor de Correos
+    # Renderizado de los 5 Correos Colapsables (Del más reciente al más antiguo)
     if st.session_state["correos"] is not None:
         correos = st.session_state["correos"][:MAX_CORREOS]
         
         st.markdown(f"""
         <div class="sync-bar">
-            <span>Sesión activa vía {st.session_state['metodo_usado']}</span>
-            <span>Mostrando {len(correos)} mensajes recientes</span>
+            <span>Bandeja sincronizada</span>
+            <span>{len(correos)} correos recientes</span>
         </div>
         """, unsafe_allow_html=True)
 
         if st.session_state["credencial_actualizada"]:
-            with st.expander("Copiar credencial con Refresh Token renovado"):
+            with st.expander("Ver credencial actualizada"):
                 st.code(st.session_state["credencial_actualizada"], language="text")
 
         if len(correos) == 0:
             st.markdown("""
             <div class="empty-state-card">
-                <span class="empty-badge">Bandeja vacía</span>
-                <div class="card-title">No hay mensajes</div>
-                <p class="card-desc">La cuenta se autenticó correctamente pero no tiene correos en la bandeja de entrada.</p>
+                <span class="empty-badge">Sin mensajes</span>
+                <div class="card-title">Bandeja de entrada vacía</div>
+                <p class="card-desc">No se encontraron correos recientes en esta cuenta.</p>
             </div>
             """, unsafe_allow_html=True)
         else:
-            with st.container(border=True, key="card_visor_correo"):
-                opciones_indices = list(range(len(correos)))
+            for idx, c in enumerate(correos):
+                es_mas_reciente = (idx == 0)
+                remitente_corto = c["remitente"].split("<")[0].strip() or c["remitente"]
+                asunto_corto = c["asunto"][:46] + ("..." if len(c["asunto"]) > 46 else "")
                 
-                def formatear_opcion(i):
-                    c = correos[i]
-                    rem = c["remitente"].split("<")[0].strip() or c["remitente"]
-                    return f"{ i + 1 }. {c['asunto'][:52]}  —  {rem[:26]} ({c['fecha']})"
+                # Sin numeración; resalta fecha/hora en negrita y agrega etiqueta al más reciente
+                if es_mas_reciente:
+                    titulo_acordeon = f"**[MÁS RECIENTE] {c['fecha']}**  —  {asunto_corto} · {remitente_corto[:22]}"
+                else:
+                    titulo_acordeon = f"**{c['fecha']}**  —  {asunto_corto} · {remitente_corto[:22]}"
 
-                seleccion = st.selectbox(
-                    f"Seleccionar mensaje ({len(correos)} recientes)",
-                    options=opciones_indices,
-                    format_func=formatear_opcion,
-                    index=min(st.session_state["correo_idx"], len(correos) - 1)
-                )
-                st.session_state["correo_idx"] = seleccion
-                correo_actual = correos[seleccion]
-
-                # Controles Anterior / Siguiente
-                col_prev, col_pos, col_next = st.columns([1, 1.3, 1])
-                with col_prev:
-                    if st.button("Anterior", type="secondary", disabled=(seleccion == 0), use_container_width=True):
-                        st.session_state["correo_idx"] = max(0, seleccion - 1)
-                        st.rerun()
-                with col_pos:
-                    st.markdown(
-                        f"<div style='text-align:center; padding-top:9px; font-size:12px; font-weight:600; color:#64748b;'>Mensaje {seleccion + 1} de {len(correos)}</div>",
-                        unsafe_allow_html=True
+                with st.expander(titulo_acordeon, expanded=es_mas_reciente):
+                    asunto_seguro = html.escape(c["asunto"])
+                    remitente_seguro = html.escape(c["remitente"])
+                    fecha_segura = html.escape(c["fecha"])
+                    
+                    badge_html = (
+                        '<span class="badge-latest">Más reciente</span>'
+                        if es_mas_reciente else
+                        '<span class="badge-recent">Correo recibido</span>'
                     )
-                with col_next:
-                    if st.button("Siguiente", type="secondary", disabled=(seleccion >= len(correos) - 1), use_container_width=True):
-                        st.session_state["correo_idx"] = min(len(correos) - 1, seleccion + 1)
-                        st.rerun()
 
-                st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin: 12px 0;'>", unsafe_allow_html=True)
-
-                asunto_seguro = html.escape(correo_actual["asunto"])
-                remitente_seguro = html.escape(correo_actual["remitente"])
-                fecha_segura = html.escape(correo_actual["fecha"])
-
-                st.markdown(f"""
-                <div class="mail-header-box">
-                    <div class="mail-subject-line">{asunto_seguro}</div>
-                    <div class="mail-meta-line">
-                        <span>De: <span class="mail-from-strong">{remitente_seguro}</span></span>
-                        <span>{fecha_segura}</span>
+                    st.markdown(f"""
+                    <div class="mail-header-box">
+                        <div class="mail-top-row">
+                            {badge_html}
+                            <span class="date-highlight">{fecha_segura}</span>
+                        </div>
+                        <div class="mail-subject-line">{asunto_seguro}</div>
+                        <div class="mail-meta-line">
+                            De: <span class="mail-from-strong">{remitente_seguro}</span>
+                        </div>
                     </div>
-                </div>
-                """, unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
 
-                st.components.v1.html(
-                    envolver_html_correo(correo_actual["cuerpo"]),
-                    height=460,
-                    scrolling=True
-                )
+                    st.components.v1.html(
+                        envolver_html_correo(c["cuerpo"]),
+                        height=380,
+                        scrolling=True
+                    )
     else:
         st.markdown("""
         <div class="empty-state-card">
-            <span class="empty-badge">Listo para conectar</span>
-            <div class="card-title">Ninguna sesión sincronizada</div>
-            <p class="card-desc">Introduce tu cadena de credenciales arriba y pulsa "Sincronizar Bandeja de Entrada" para visualizar los últimos 5 correos.</p>
+            <span class="empty-badge">Listo para consultar</span>
+            <div class="card-title">Ninguna cuenta cargada</div>
+            <p class="card-desc">Pega tu cadena de acceso arriba y pulsa "Consultar últimos 5 correos" para ver tus mensajes.</p>
         </div>
         """, unsafe_allow_html=True)
 
 # ==========================================
-# PESTAÑA 2: GENERADOR DE TOKEN OAUTH2
+# PESTAÑA 2: GENERAR ACCESO
 # ==========================================
 with tab_generador:
     with st.container(border=True, key="card_oauth_gen"):
         st.markdown("""
         <div class="card-header">
-            <div class="card-title">Autorización por Código de Dispositivo (OAuth 2.0)</div>
-            <div class="card-desc">Vincula tu cuenta oficial de Microsoft para obtener un Refresh Token nuevo sin exponer tus credenciales.</div>
+            <div class="card-title">Vincular cuenta de correo</div>
+            <div class="card-desc">Genera una credencial de acceso rápida mediante código de verificación de Microsoft.</div>
         </div>
         """, unsafe_allow_html=True)
         
@@ -719,9 +750,8 @@ with tab_generador:
                 placeholder="Ingresa tu contraseña"
             )
             
-        # Placeholder hexadecimal en minúscula combinando letras a-f y números 1-6
         gen_client_id = st.text_input(
-            "Client ID de la aplicación (Azure AD)",
+            "Client ID",
             placeholder="a1b2c3d4-e5f6-1234-a1b2-c3d4e5f61234"
         )
         
@@ -729,7 +759,7 @@ with tab_generador:
         
         if st.button("Solicitar Código de Vinculación", type="primary", use_container_width=True):
             if not gen_email or not gen_client_id:
-                st.warning("Completa el correo electrónico y pega el Client ID de la aplicación.")
+                st.warning("Completa el correo electrónico y el Client ID.")
             else:
                 url_device = "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode"
                 scopes = "offline_access Mail.Read"
@@ -742,8 +772,7 @@ with tab_generador:
                         st.session_state["user_code"] = datos_dev["user_code"]
                         st.session_state["verification_uri"] = datos_dev.get("verification_uri", "https://microsoft.com/devicelogin")
                     else:
-                        st.error("Microsoft rechazó la generación del código. Verifica que el Client ID sea válido.")
-                        st.json(datos_dev)
+                        st.error("No se pudo generar el código. Verifica que el Client ID sea válido.")
                 except Exception as e:
                     st.error(f"Error de conexión: {str(e)}")
 
@@ -751,23 +780,23 @@ with tab_generador:
             st.markdown(f"""
             <div class="oauth-box">
                 <div style="font-size: 11px; font-weight: 700; color: #2563eb; text-transform: uppercase; letter-spacing: 0.06em;">
-                    Paso 1 — Autorización en Microsoft
+                    Código de verificación
                 </div>
                 <div class="oauth-code">{st.session_state['user_code']}</div>
                 <div>
                     <a href="{st.session_state['verification_uri']}" target="_blank" class="oauth-link">
-                        Abrir portal de activación de Microsoft
+                        Abrir página de activación de Microsoft
                     </a>
                 </div>
                 <p style="font-size: 12px; color: #64748b; margin: 12px 0 0 0;">
-                    Abre el enlace en una pestaña de incógnito, inicia sesión con <b>{html.escape(gen_email)}</b> e introduce el código.
+                    Abre el enlace en modo incógnito, inicia sesión con <b>{html.escape(gen_email)}</b> e ingresa el código.
                 </p>
             </div>
             """, unsafe_allow_html=True)
             
             col_ok, col_cancel = st.columns([2, 1])
             with col_ok:
-                if st.button("Confirmar y Obtener Refresh Token", type="primary", use_container_width=True):
+                if st.button("Confirmar y Obtener Credencial", type="primary", use_container_width=True):
                     url_token = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
                     r_tok = requests.post(url_token, data={
                         "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
@@ -786,9 +815,9 @@ with tab_generador:
                     else:
                         err = res_tok.get("error", "")
                         if err == "authorization_pending":
-                            st.info("Aún no has finalizado la autorización en la página de Microsoft.")
+                            st.info("Aún no has finalizado la autorización en la ventana de Microsoft.")
                         else:
-                            st.error(f"Error al canjear el código: {res_tok.get('error_description', err)}")
+                            st.error("No se pudo completar la vinculación. Solicita un nuevo código.")
             with col_cancel:
                 if st.button("Cancelar", type="secondary", use_container_width=True):
                     del st.session_state["user_code"]
@@ -798,6 +827,6 @@ with tab_generador:
             st.markdown("<hr style='border:none; border-top:1px solid #e2e8f0; margin: 14px 0;'>", unsafe_allow_html=True)
             st.success("Credencial generada exitosamente:")
             st.code(st.session_state["credencial_generada_nueva"], language="text")
-            if st.button("Enviar esta credencial a la Bandeja de Entrada", type="secondary", use_container_width=True):
+            if st.button("Usar esta credencial en la Bandeja de Entrada", type="secondary", use_container_width=True):
                 st.session_state["credenciales_input"] = st.session_state["credencial_generada_nueva"]
-                st.info("Listo. Abre la pestaña 'Bandeja de Entrada' y pulsa 'Sincronizar Bandeja de Entrada'.")
+                st.info("Credencial cargada en la pestaña 'Bandeja de Entrada'.")
