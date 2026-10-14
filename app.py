@@ -16,7 +16,7 @@ css_styles = """
     display: flex;
     align-items: center;
     gap: 16px;
-    margin-bottom: 24px;
+    margin-bottom: 16px;
 }
 .icon-box {
     background-color: #fff0e6;
@@ -76,15 +76,6 @@ div.stButton > button p {
     font-size: 16px !important;
     font-weight: 600 !important;
 }
-div.stButton > button p::before {
-    content: "";
-    display: inline-block;
-    width: 20px;
-    height: 20px;
-    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cGF0aCBmaWxsPSJ3aGl0ZSIgZD0iTTIyNCw0OEgzMmE4LDgsMCwwLDAtOCw4VjE5MmExNiwxNiwwLDAsMCwxNiwxNkgyMTZhMTYsMTYsMCwwLDAsMTYtMTZWNTZBOCw4LDAsMCwwLDIyNCw0OFptLTk2LDg1LjE1TDUyLjU3LDY0SDIwMy40M1pNOTguNzEsMTI4LDQwLDE4MS44MVY3NC4xOVptMTEuODQsMTAuODUsMTIsMTEuMDVhOCw4LDAsMCwwLDEwLjgyLDBsMTItMTEuMDUsNTgsNTMuMTVINTIuNTdaTTE1Ny4yOSwxMjgsMjE2LDc0LjE4VjE4MS44MloiLz48L3N2Zz4=");
-    background-size: contain;
-    background-repeat: no-repeat;
-}
 .empty-box {
     text-align: center;
     padding: 45px 20px;
@@ -93,6 +84,14 @@ div.stButton > button p::before {
     background-color: #fafafa;
     color: #6b7280;
     margin-top: 20px;
+}
+.code-card {
+    background-color: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    padding: 18px;
+    margin: 15px 0;
+    text-align: center;
 }
 </style>
 """
@@ -105,41 +104,32 @@ st.markdown("""
     </div>
     <div>
         <div class="header-title">Quick Read Hotmail</div>
-        <div class="header-subtitle">Quick access to read Hotmail/Outlook emails</div>
+        <div class="header-subtitle">Quick access & OAuth2 Token Generator</div>
     </div>
 </div>
-<div class="label-title"><i class="ph ph-key"></i> Email Credentials</div>
 """, unsafe_allow_html=True)
 
-credenciales = st.text_area(
-    "Email Credentials",
-    placeholder="email|password|refresh_token|client_id",
-    height=120,
-    label_visibility="collapsed"
-)
+# Pestañas para separar el Lector del Generador de nuevos tokens
+tab_lector, tab_generador = st.tabs(["📩 Read Emails", "🔑 Generar Nuevo Token"])
 
 def obtener_access_token_multivia(client_id, refresh_token):
     endpoints = [
-        # Vía 1: Estándar Microsoft Online v2.0
         ("https://login.microsoftonline.com/common/oauth2/v2.0/token", {
             "client_id": client_id.strip(),
             "refresh_token": refresh_token.strip(),
             "grant_type": "refresh_token",
         }),
-        # Vía 2: Endpoint Consumer / Live (Ideal para tokens M.C540...)
         ("https://login.microsoftonline.com/consumers/oauth2/v2.0/token", {
             "client_id": client_id.strip(),
             "refresh_token": refresh_token.strip(),
             "grant_type": "refresh_token",
         }),
-        # Vía 3: Live Login clásico
         ("https://login.live.com/oauth20_token.srf", {
             "client_id": client_id.strip(),
             "refresh_token": refresh_token.strip(),
             "grant_type": "refresh_token",
         })
     ]
-    
     ultimo_error = {}
     for url, datos in endpoints:
         try:
@@ -150,7 +140,6 @@ def obtener_access_token_multivia(client_id, refresh_token):
             ultimo_error = res_json
         except Exception as e:
             ultimo_error = {"error": str(e)}
-            
     return ultimo_error
 
 def leer_via_graph_api(access_token, cantidad=10):
@@ -215,16 +204,13 @@ def leer_correos_imap(correo, access_token, cantidad=10):
     mail = imaplib.IMAP4_SSL("outlook.office365.com", 993)
     mail.authenticate("XOAUTH2", lambda x: auth_string.encode("utf-8"))
     mail.select("INBOX")
-    
     estado, mensajes = mail.search(None, "ALL")
     ids_correos = mensajes[0].split()
     if not ids_correos:
         mail.logout()
         return []
-        
     ultimos_ids = ids_correos[-cantidad:][::-1]
     lista_correos = []
-    
     for i in ultimos_ids:
         res, msg_data = mail.fetch(i, "(RFC822)")
         for response_part in msg_data:
@@ -239,63 +225,140 @@ def leer_correos_imap(correo, access_token, cantidad=10):
     mail.logout()
     return lista_correos
 
-if st.button("Read Emails", use_container_width=True):
-    if not credenciales or "|" not in credenciales:
-        st.warning("Ingresa los datos en el formato exacto: email|password|refresh_token|client_id")
-    else:
-        partes = [p.strip() for p in credenciales.strip().split("|")]
-        if len(partes) < 4:
-            st.error("Formato incompleto. Asegúrate de incluir las 4 partes separadas por '|'.")
+# ================= PESTAÑA 1: LECTOR DE CORREOS =================
+with tab_lector:
+    st.markdown('<div class="label-title"><i class="ph ph-key"></i> Email Credentials</div>', unsafe_allow_html=True)
+    credenciales = st.text_area(
+        "Email Credentials",
+        placeholder="email|password|refresh_token|client_id",
+        height=115,
+        label_visibility="collapsed"
+    )
+
+    if st.button("✉️ Read Emails", use_container_width=True):
+        if not credenciales or "|" not in credenciales:
+            st.warning("Ingresa los datos en el formato exacto: email|password|refresh_token|client_id")
         else:
-            correo, password, refresh_token, client_id = partes[0], partes[1], partes[2], partes[3]
+            partes = [p.strip() for p in credenciales.strip().split("|")]
+            if len(partes) < 4:
+                st.error("Formato incompleto. Asegúrate de incluir las 4 partes separadas por '|'.")
+            else:
+                correo, password, refresh_token, client_id = partes[0], partes[1], partes[2], partes[3]
+                with st.spinner("Autenticando y buscando mensajes en Microsoft..."):
+                    token_data = obtener_access_token_multivia(client_id, refresh_token)
+                    
+                    if "access_token" not in token_data:
+                        st.error("❌ El refresh_token ha expirado (invalid_grant). Ve a la pestaña '🔑 Generar Nuevo Token' arriba para renovarlo con tu contraseña.")
+                        with st.expander("Detalle técnico devuelto por Microsoft"):
+                            st.json(token_data)
+                    else:
+                        access_token = token_data["access_token"]
+                        nuevo_refresh = token_data.get("refresh_token", refresh_token)
+                        
+                        # Mostrar línea renovada para que no expire
+                        with st.expander("🔄 Ver credencial con Token Renovado (Guárdalo para que no expire)"):
+                            st.code(f"{correo}|{password}|{nuevo_refresh}|{client_id}", language="text")
+                            
+                        try:
+                            correos = leer_via_graph_api(access_token, cantidad=10)
+                            if correos is None:
+                                correos = leer_correos_imap(correo, access_token, cantidad=10)
+                                
+                            if not correos:
+                                st.markdown("""
+                                <div class="empty-box">
+                                    <i class="ph-fill ph-tray" style="font-size: 48px; color: #d1d5db;"></i>
+                                    <div style="margin: 12px 0 4px 0; color: #1f2937; font-size: 18px; font-weight: 700;">No Emails Found</div>
+                                    <div style="margin: 0; font-size: 14px;">The inbox is currently empty</div>
+                                </div>
+                                """, unsafe_allow_html=True)
+                            else:
+                                st.markdown(f"""
+                                <div style="display:flex; align-items:center; gap:8px; color:#059669; font-weight:600; margin: 15px 0;">
+                                    <i class="ph-fill ph-check-circle" style="font-size: 20px;"></i>
+                                    <span>{len(correos)} correos recientes cargados de {correo}</span>
+                                </div>
+                                """, unsafe_allow_html=True)
+                                
+                                for idx, c in enumerate(correos):
+                                    with st.expander(f"{c['asunto']}  —  {c['remitente']}", expanded=(idx == 0)):
+                                        st.markdown(f"""
+                                        <div style="font-size: 13px; color: #6b7280; margin-bottom: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
+                                            <span><i class="ph ph-user"></i> {c['remitente']}</span>
+                                            <span><i class="ph ph-calendar-blank"></i> {c['fecha']}</span>
+                                        </div>
+                                        """, unsafe_allow_html=True)
+                                        st.components.v1.html(c["cuerpo"], height=350, scrolling=True)
+                        except Exception as e:
+                            st.error(f"Error al abrir bandeja: {str(e)}")
+    else:
+        st.markdown("""
+        <div class="empty-box">
+            <i class="ph-fill ph-tray" style="font-size: 52px; color: #d1d5db;"></i>
+            <div style="margin: 12px 0 6px 0; color: #1f2937; font-size: 18px; font-weight: 700;">No Emails Yet</div>
+            <div style="margin: 0; font-size: 14px;">Enter your credentials above to read your emails</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+# ================= PESTAÑA 2: GENERADOR DE NUEVO TOKEN =================
+with tab_generador:
+    st.markdown("### 🔑 Generar un nuevo Refresh Token")
+    st.caption("Si una cuenta te da error `invalid_grant`, genera aquí un token nuevo iniciando sesión con su correo y contraseña.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        gen_email = st.text_input("Correo (Email)", placeholder="ejemplo@outlook.com")
+    with col2:
+        gen_pass = st.text_input("Contraseña (Password)", placeholder="TuContraseña123")
+        
+    # Client ID público estándar compatible con lectura de correo OAuth2
+    gen_client_id = st.text_input(
+        "Client ID (Deja el predeterminado si el tuyo da error)", 
+        value="9e5f94bc-e8a4-4e73-b8be-63364c29d753"
+    )
+    
+    if st.button("1️⃣ Solicitar Código de Vinculación", use_container_width=True):
+        url_device = "https://login.microsoftonline.com/common/oauth2/v2.0/devicecode"
+         scopes = "offline_access https://outlook.office.com/IMAP.AccessAsUser.All https://graph.microsoft.com/Mail.Read"
+        r = requests.post(url_device, data={"client_id": gen_client_id.strip(), "scope": scopes})
+        datos_dev = r.json()
+        
+        if "user_code" in datos_dev:
+            st.session_state["device_code"] = datos_dev["device_code"]
+            st.session_state["user_code"] = datos_dev["user_code"]
+            st.session_state["verification_uri"] = datos_dev.get("verification_uri", "https://microsoft.com/devicelogin")
+        else:
+            st.error("Ese Client ID no permite vinculación directa. Prueba con el Client ID: d3590ed6-52b3-4102-aeff-aad2292ab01c")
+            st.json(datos_dev)
             
-            with st.spinner("Autenticando y buscando mensajes en Microsoft..."):
-                token_data = obtener_access_token_multivia(client_id, refresh_token)
-                
-                if "access_token" not in token_data:
-                    st.error("❌ El refresh_token de esta cuenta ha expirado o fue revocado por Microsoft (invalid_grant). Prueba con otra cuenta o inicia sesión manualmente con la contraseña.")
-                    with st.expander("Detalle técnico devuelto por Microsoft"):
-                        st.json(token_data)
-                else:
-                    access_token = token_data["access_token"]
-                    try:
-                        # Intenta primero vía Graph API (más rápido) y si no, vía IMAP
-                        correos = leer_via_graph_api(access_token, cantidad=10)
-                        if correos is None:
-                            correos = leer_correos_imap(correo, access_token, cantidad=10)
-                            
-                        if not correos:
-                            st.markdown("""
-                            <div class="empty-box">
-                                <i class="ph-fill ph-tray" style="font-size: 48px; color: #d1d5db;"></i>
-                                <div style="margin: 12px 0 4px 0; color: #1f2937; font-size: 18px; font-weight: 700;">No Emails Found</div>
-                                <div style="margin: 0; font-size: 14px;">The inbox is currently empty</div>
-                            </div>
-                            """, unsafe_allow_html=True)
-                        else:
-                            st.markdown(f"""
-                            <div style="display:flex; align-items:center; gap:8px; color:#059669; font-weight:600; margin: 15px 0;">
-                                <i class="ph-fill ph-check-circle" style="font-size: 20px;"></i>
-                                <span>{len(correos)} correos recientes cargados de {correo}</span>
-                            </div>
-                            """, unsafe_allow_html=True)
-                            
-                            for idx, c in enumerate(correos):
-                                with st.expander(f"{c['asunto']}  —  {c['remitente']}", expanded=(idx == 0)):
-                                    st.markdown(f"""
-                                    <div style="font-size: 13px; color: #6b7280; margin-bottom: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
-                                        <span><i class="ph ph-user"></i> {c['remitente']}</span>
-                                        <span><i class="ph ph-calendar-blank"></i> {c['fecha']}</span>
-                                    </div>
-                                    """, unsafe_allow_html=True)
-                                    st.components.v1.html(c["cuerpo"], height=350, scrolling=True)
-                    except Exception as e:
-                        st.error(f"Error al abrir bandeja: {str(e)}")
-else:
-    st.markdown("""
-    <div class="empty-box">
-        <i class="ph-fill ph-tray" style="font-size: 52px; color: #d1d5db;"></i>
-        <div style="margin: 12px 0 6px 0; color: #1f2937; font-size: 18px; font-weight: 700;">No Emails Yet</div>
-        <div style="margin: 0; font-size: 14px;">Enter your credentials above to read your emails</div>
-    </div>
-    """, unsafe_allow_html=True)
+    if "user_code" in st.session_state:
+        st.markdown(f"""
+        <div class="code-card">
+            <div style="font-size: 14px; color: #9a3412; margin-bottom: 6px;">Paso A: Copia este código de vinculación:</div>
+            <div style="font-size: 28px; font-weight: 800; letter-spacing: 3px; color: #ea580c; margin-bottom: 12px;">{st.session_state['user_code']}</div>
+            <a href="{st.session_state['verification_uri']}" target="_blank" style="display: inline-block; background-color: #1f2937; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">
+                🔗 Paso B: Abrir Microsoft Login e ingresar código
+            </a>
+            <div style="font-size: 12px; color: #6b7280; margin-top: 10px;">
+                (Abre el enlace en ventana de incógnito para que no se mezcle con tu correo personal, inicia sesión con <b>{gen_email or 'el correo'}</b> y acepta los permisos).
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+        
+        if st.button("2️⃣ Ya inicié sesión, ¡Obtener mi Nuevo Token!", use_container_width=True):
+            url_token = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
+            r_tok = requests.post(url_token, data={
+                "grant_type": "urn:ietf:params:oauth:grant-type:device_code",
+                "client_id": gen_client_id.strip(),
+                "device_code": st.session_state["device_code"]
+            })
+            res_tok = r_tok.json()
+            if "refresh_token" in res_tok:
+                nuevo_rt = res_tok["refresh_token"]
+                linea_final = f"{gen_email.strip()}|{gen_pass.strip()}|{nuevo_rt}|{gen_client_id.strip()}"
+                st.success("✅ ¡Nuevo Refresh Token generado con éxito! Copia tu nueva línea:")
+                st.code(linea_final, language="text")
+            else:
+                st.warning("Todavía no has completado el inicio de sesión en el enlace de Microsoft o el código expiró.")
+                with st.expander("Ver respuesta de Microsoft"):
+                    st.json(res_tok)
