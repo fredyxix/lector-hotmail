@@ -5,121 +5,118 @@ import imaplib
 import email
 from email.header import decode_header
 
-# Configuración de la página
 st.set_page_config(page_title="Quick Read Hotmail", layout="centered")
 
-# Inyección de Phosphor Icons (vía CDN) y Estilos CSS con SVG integrado en el botón
-st.markdown("""
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
-    <link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css" />
-    <style>
-    /* Cabecera estilo tarjeta con icono SVG/Phosphor */
-    .header-container {
-        display: flex;
-        align-items: center;
-        gap: 16px;
-        margin-bottom: 20px;
-    }
-    .icon-box {
-        background-color: #fff0e6;
-        color: #ff5500;
-        width: 54px;
-        height: 54px;
-        border-radius: 14px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 28px;
-        box-shadow: 0 2px 5px rgba(255, 85, 0, 0.1);
-    }
-    .header-title {
-        margin: 0;
-        font-size: 24px;
-        font-weight: 700;
-        color: #1f2937;
-    }
-    .header-subtitle {
-        margin: 2px 0 0 0;
-        font-size: 14px;
-        color: #6b7280;
-    }
-    
-    /* Botón naranja con icono SVG incrustado vía CSS */
-    div.stButton > button:first-child {
-        background-color: #f25c05;
-        color: white;
-        font-weight: 600;
-        border-radius: 8px;
-        border: none;
-        padding: 12px 24px;
-        width: 100%;
-        font-size: 16px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        gap: 8px;
-        box-shadow: 0 4px 6px rgba(242, 92, 5, 0.2);
-        transition: all 0.2s ease;
-    }
-    div.stButton > button:first-child:hover {
-        background-color: #d95002;
-        color: white;
-        border: none;
-    }
-    div.stButton > button:first-child::before {
-        content: "";
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        margin-right: 6px;
-        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 256 256'%3E%3Cpath fill='white' d='M224,48H32a8,8,0,0,0-8,8V192a16,16,0,0,0,16,16H216a16,16,0,0,0,16-16V56A8,8,0,0,0,224,48Zm-96,85.15L52.57,64H203.43ZM98.71,128,40,181.81V74.19Zm11.84,10.85,12,11.05a8,8,0,0,0,10.82,0l12-11.05,58,53.15H52.57ZM157.29,128,216,74.18V181.82Z'/%3E%3C/svg%3E");
-        background-size: contain;
-        background-repeat: no-repeat;
-    }
+# CSS limpio y SVG en Base64 para que nunca se rompa el diseño
+css_styles = """
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/regular/style.css" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/fill/style.css" />
+<link rel="stylesheet" type="text/css" href="https://unpkg.com/@phosphor-icons/web@2.1.1/src/duotone/style.css" />
+<style>
+.header-container {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+.icon-box {
+    background-color: #fff0e6;
+    color: #ff5500;
+    width: 54px;
+    height: 54px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    flex-shrink: 0;
+}
+.header-title {
+    margin: 0 !important;
+    padding: 0 !important;
+    font-size: 24px !important;
+    font-weight: 700 !important;
+    color: #1f2937 !important;
+    line-height: 1.2 !important;
+}
+.header-subtitle {
+    margin: 4px 0 0 0 !important;
+    font-size: 14px !important;
+    color: #6b7280 !important;
+}
+.label-title {
+    font-weight: 600;
+    font-size: 14px;
+    color: #1f2937;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+div.stButton > button {
+    background-color: #f25c05 !important;
+    color: white !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    border: none !important;
+    padding: 14px 24px !important;
+    width: 100% !important;
+    font-size: 16px !important;
+    box-shadow: 0 4px 10px rgba(242, 92, 5, 0.25) !important;
+}
+div.stButton > button:hover {
+    background-color: #d95002 !important;
+    color: white !important;
+}
+div.stButton > button p {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin: 0;
+    font-size: 16px !important;
+    font-weight: 600 !important;
+}
+div.stButton > button p::before {
+    content: "";
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNTYgMjU2Ij48cGF0aCBmaWxsPSJ3aGl0ZSIgZD0iTTIyNCw0OEgzMmE4LDgsMCwwLDAtOCw4VjE5MmExNiwxNiwwLDAsMCwxNiwxNkgyMTZhMTYsMTYsMCwwLDAsMTYtMTZWNTZBOCw4LDAsMCwwLDIyNCw0OFptLTk2LDg1LjE1TDUyLjU3LDY0SDIwMy40M1pNOTguNzEsMTI4LDQwLDE4MS44MVY3NC4xOVptMTEuODQsMTAuODUsMTIsMTEuMDVhOCw4LDAsMCwwLDEwLjgyLDBsMTItMTEuMDUsNTgsNTMuMTVINTIuNTdaTTE1Ny4yOSwxMjgsMjE2LDc0LjE4VjE4MS44MloiLz48L3N2Zz4=");
+    background-size: contain;
+    background-repeat: no-repeat;
+}
+.empty-box {
+    text-align: center;
+    padding: 45px 20px;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    background-color: #fafafa;
+    color: #6b7280;
+    margin-top: 20px;
+}
+</style>
+"""
+st.markdown(css_styles, unsafe_allow_html=True)
 
-    /* Caja de estado vacío */
-    .empty-box {
-        text-align: center;
-        padding: 45px 20px;
-        border: 1px solid #f0f0f0;
-        border-radius: 12px;
-        background-color: #fafafa;
-        color: #6b7280;
-        margin-top: 15px;
-    }
-    .label-title {
-        font-weight: 600;
-        font-size: 14px;
-        color: #374151;
-        margin-bottom: 6px;
-        display: flex;
-        align-items: center;
-        gap: 6px;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# Cabecera con Phosphor Icon (ph-duotone ph-envelope-open)
+# Cabecera
 st.markdown("""
-    <div class="header-container">
-        <div class="icon-box">
-            <i class="ph-duotone ph-envelope-open"></i>
-        </div>
-        <div>
-            <h1 class="header-title">Quick Read Hotmail</h1>
-            <p class="header-subtitle">Quick access to read Hotmail/Outlook emails</p>
-        </div>
+<div class="header-container">
+    <div class="icon-box">
+        <i class="ph-duotone ph-envelope-open"></i>
     </div>
+    <div>
+        <div class="header-title">Quick Read Hotmail</div>
+        <div class="header-subtitle">Quick access to read Hotmail/Outlook emails</div>
+    </div>
+</div>
+<div class="label-title"><i class="ph ph-key"></i> Email Credentials</div>
 """, unsafe_allow_html=True)
-
-# Etiqueta con icono Phosphor
-st.markdown('<div class="label-title"><i class="ph ph-key"></i> Email Credentials</div>', unsafe_allow_html=True)
 
 credenciales = st.text_area(
     "Email Credentials",
     placeholder="email|password|refresh_token|client_id",
-    height=115,
+    height=120,
     label_visibility="collapsed"
 )
 
@@ -200,8 +197,7 @@ def leer_correos_imap(correo, access_token, cantidad=10):
     mail.logout()
     return lista_correos
 
-# El botón ya incluye el SVG de sobre de correo automáticamente vía CSS
-if st.button("Read Emails"):
+if st.button("Read Emails", use_container_width=True):
     if not credenciales or "|" not in credenciales:
         st.warning("Ingresa los datos en el formato exacto: email|password|refresh_token|client_id")
     else:
@@ -223,37 +219,36 @@ if st.button("Read Emails"):
                         correos = leer_correos_imap(correo.strip(), token_data["access_token"], cantidad=10)
                         if not correos:
                             st.markdown("""
-                                <div class="empty-box">
-                                    <i class="ph-fill ph-tray" style="font-size: 48px; color: #d1d5db;"></i>
-                                    <h3 style="margin: 12px 0 4px 0; color: #1f2937; font-size: 18px;">No Emails Found</h3>
-                                    <p style="margin: 0; font-size: 14px;">The inbox is currently empty</p>
-                                </div>
+                            <div class="empty-box">
+                                <i class="ph-fill ph-tray" style="font-size: 48px; color: #d1d5db;"></i>
+                                <div style="margin: 12px 0 4px 0; color: #1f2937; font-size: 18px; font-weight: 700;">No Emails Found</div>
+                                <div style="margin: 0; font-size: 14px;">The inbox is currently empty</div>
+                            </div>
                             """, unsafe_allow_html=True)
                         else:
                             st.markdown(f"""
-                                <div style="display:flex; align-items:center; gap:8px; color:#059669; font-weight:600; margin: 15px 0;">
-                                    <i class="ph-fill ph-check-circle" style="font-size: 20px;"></i>
-                                    <span>{len(correos)} correos recientes cargados de {correo}</span>
-                                </div>
+                            <div style="display:flex; align-items:center; gap:8px; color:#059669; font-weight:600; margin: 15px 0;">
+                                <i class="ph-fill ph-check-circle" style="font-size: 20px;"></i>
+                                <span>{len(correos)} correos recientes cargados de {correo}</span>
+                            </div>
                             """, unsafe_allow_html=True)
                             
                             for idx, c in enumerate(correos):
                                 with st.expander(f"{c['asunto']}  —  {c['remitente']}", expanded=(idx == 0)):
                                     st.markdown(f"""
-                                        <div style="font-size: 13px; color: #6b7280; margin-bottom: 10px; display: flex; gap: 15px;">
-                                            <span><i class="ph ph-user"></i> {c['remitente']}</span>
-                                            <span><i class="ph ph-calendar-blank"></i> {c['fecha']}</span>
-                                        </div>
+                                    <div style="font-size: 13px; color: #6b7280; margin-bottom: 10px; display: flex; gap: 15px; flex-wrap: wrap;">
+                                        <span><i class="ph ph-user"></i> {c['remitente']}</span>
+                                        <span><i class="ph ph-calendar-blank"></i> {c['fecha']}</span>
+                                    </div>
                                     """, unsafe_allow_html=True)
                                     st.components.v1.html(c["cuerpo"], height=350, scrolling=True)
                     except Exception as e:
                         st.error(f"Error de conexión IMAP: {str(e)}")
 else:
-    # Estado inicial idéntico a la captura usando Phosphor Icons (ph-tray)
     st.markdown("""
-        <div class="empty-box">
-            <i class="ph-fill ph-tray" style="font-size: 52px; color: #d1d5db;"></i>
-            <h3 style="margin: 12px 0 6px 0; color: #1f2937; font-size: 18px; font-weight: 700;">No Emails Yet</h3>
-            <p style="margin: 0; font-size: 14px;">Enter your credentials above to read your emails</p>
-        </div>
+    <div class="empty-box">
+        <i class="ph-fill ph-tray" style="font-size: 52px; color: #d1d5db;"></i>
+        <div style="margin: 12px 0 6px 0; color: #1f2937; font-size: 18px; font-weight: 700;">No Emails Yet</div>
+        <div style="margin: 0; font-size: 14px;">Enter your credentials above to read your emails</div>
+    </div>
     """, unsafe_allow_html=True)
