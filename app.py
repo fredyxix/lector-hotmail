@@ -7,6 +7,7 @@ from email.header import decode_header
 from email.utils import parsedate_to_datetime
 from datetime import datetime, timezone
 import html
+import re
 
 st.set_page_config(
     page_title="Outlook QuickReader",
@@ -403,7 +404,6 @@ MAX_CORREOS = 5
 
 for key, default in {
     "correos": None,
-    "credencial_actualizada": "",
     "credenciales_input": "",
     "correo_activo": ""
 }.items():
@@ -411,21 +411,66 @@ for key, default in {
         st.session_state[key] = default
 
 # ==========================================
-# FUNCIONES DE CONEXIÓN, FECHA Y ORDENAMIENTO
+# PARSER ROBUSTO DE FECHAS Y CONEXIÓN
 # ==========================================
 def parsear_fecha_y_timestamp(fecha_str):
+    """
+    Convierte cualquier formato de fecha (ISO 8601, RFC 2822 o variantes no estándar)
+    a un formato uniforme 'DD Mon YYYY, HH:MM' y devuelve su timestamp exacto en UTC.
+    """
     if not fecha_str:
         return "Fecha desconocida", 0.0
+
+    limpia = fecha_str.strip()
+    dt = None
+
+    # 1. Intento directo ISO 8601 (Graph API: 2026-10-18T16:11:00Z)
     try:
-        if "T" in fecha_str:
-            dt = datetime.fromisoformat(fecha_str.replace("Z", "+00:00"))
-        else:
-            dt = parsedate_to_datetime(fecha_str)
+        if "T" in limpia and ("-" in limpia[:10]):
+            dt = datetime.fromisoformat(limpia.replace("Z", "+00:00"))
+    except Exception:
+        dt = None
+
+    # 2. Intento estándar RFC 2822 (IMAP: Sun, 18 Oct 2026 16:11:00 +0000)
+    if dt is None:
+        try:
+            dt = parsedate_to_datetime(limpia)
+        except Exception:
+            dt = None
+
+    # 3. Limpieza de comentarios entre paréntesis o zonas textuales (ej. '(UTC)', 'GMT')
+    if dt is None:
+        try:
+            sin_parentesis = re.sub(r"\s*\([^)]*\)", "", limpia).strip()
+            dt = parsedate_to_datetime(sin_parentesis)
+        except Exception:
+            dt = None
+
+    # 4. Extracción por expresión regular (ej. 'Sun, 18 Oct 2026 16:11:05' o '18 Oct 2026 16:11')
+    if dt is None:
+        patron = re.search(
+            r"(\d{1,2})\s+([A-Za-z]{3})\s+(\d{4})\s+(\d{1,2}):(\d{2})(?::(\d{2}))?",
+            limpia
+        )
+        if patron:
+            dia, mes_str, anio, hora, minuto, segundo = patron.groups()
+            segundo = segundo or "00"
+            try:
+                dt = datetime.strptime(
+                    f"{int(dia):02d} {mes_str[:3].title()} {anio} {int(hora):02d}:{minuto}:{segundo}",
+                    "%d %b %Y %H:%M:%S"
+                ).replace(tzinfo=timezone.utc)
+            except Exception:
+                dt = None
+
+    if dt is not None:
         if dt.tzinfo is None:
             dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            dt = dt.astimezone(timezone.utc)
         return dt.strftime("%d %b %Y, %H:%M"), dt.timestamp()
-    except Exception:
-        return fecha_str[:22], 0.0
+
+    return limpia[:22], 0.0
 
 def envolver_html_correo(contenido_html):
     return f"""
@@ -494,13 +539,19 @@ def obtener_access_token_multivia(client_id, refresh_token):
 
 def leer_via_graph_api(access_token, cantidad=MAX_CORREOS):
     headers = {"Authorization": f"Bearer {access_token}"}
-    url = f"https://graph.microsoft.com/v1.0/me/messages?$top={cantidad}&$orderby=receivedDateTime desc&$select=subject,from,receivedDateTime,body"
+    url = (
+        f"https://graph.microsoft.com/v1.0/me/messages"
+        f"?$top={cantidad}&$orderby=receivedDateTime desc"
+        f"&$select=subject,from,receivedDateTime,body"
+    )
     r = requests.get(url, headers=headers, timeout=12)
     if r.status_code != 200:
         return None
     datos = r.json()
+    mensajes = datos.get("value", [])[:cantidad]
     lista_correos = []
-    for msg in datos.get("value", [])[:cantidad]:
+    total = len(mensajes)
+    for pos, msg in enumerate(mensajes):
         remitente_info = msg.get("from", {}).get("emailAddress", {})
         nombre = remitente_info.get("name", "").strip()
         direccion = remitente_info.get("address", "").strip()
@@ -511,9 +562,11 @@ def leer_via_graph_api(access_token, cantidad=MAX_CORREOS):
             "remitente": remitente or "Desconocido",
             "fecha": fecha_fmt,
             "ts": ts,
+            "orden_servidor": total - pos,
             "cuerpo": msg.get("body", {}).get("content", "")
         })
-    lista_correos.sort(key=lambda x: x["ts"], reverse=True)
+    # Ordena por timestamp real y usa el orden del servidor como desempate
+    lista_correos.sort(key=lambda x: (x["ts"], x["orden_servidor"]), reverse=True)
     return lista_correos
 
 def decodificar_texto(texto):
@@ -564,27 +617,40 @@ def leer_correos_imap(correo, access_token, cantidad=MAX_CORREOS):
     if not ids_correos:
         mail.logout()
         return []
+    # Los IDs de IMAP crecen secuencialmente según el orden de llegada al servidor
     ultimos_ids = ids_correos[-cantidad:][::-1]
     lista_correos = []
-    for i in ultimos_ids:
-        res, msg_data = mail.fetch(i, "(RFC822)")
+    for idx_secuencia, i in enumerate(ultimos_ids):
+        res, msg_data = mail.fetch(i, "(INTERNALDATE RFC822)")
         for response_part in msg_data:
             if isinstance(response_part, tuple):
+                meta_info = response_part[0].decode("utf-8", errors="ignore")
                 msg = email.message_from_bytes(response_part[1])
+                
+                # Intentar primero la cabecera Date del mensaje
                 fecha_fmt, ts = parsear_fecha_y_timestamp(msg.get("Date", ""))
+                
+                # Si la cabecera Date falló (ts == 0), extraer INTERNALDATE del servidor IMAP
+                if ts == 0.0:
+                    match_internal = re.search(r'INTERNALDATE "([^"]+)"', meta_info)
+                    if match_internal:
+                        fecha_fmt, ts = parsear_fecha_y_timestamp(match_internal.group(1))
+
                 lista_correos.append({
                     "asunto": decodificar_texto(msg.get("Subject", "(Sin asunto)")),
                     "remitente": decodificar_texto(msg.get("From", "Desconocido")),
                     "fecha": fecha_fmt,
                     "ts": ts,
+                    "orden_servidor": int(i),
                     "cuerpo": extraer_cuerpo(msg)
                 })
     mail.logout()
-    lista_correos.sort(key=lambda x: x["ts"], reverse=True)
+    # Ordena del más reciente al más antiguo garantizando que ningún fallo de fecha altere el orden real
+    lista_correos.sort(key=lambda x: (x["ts"], x["orden_servidor"]), reverse=True)
     return lista_correos
 
 # ==========================================
-# CABECERA SUPERIOR (SIN DETALLES TÉCNICOS)
+# CABECERA SUPERIOR
 # ==========================================
 st.markdown("""
 <div class="hero-header">
@@ -639,7 +705,8 @@ with tab_lector:
                     else:
                         access_token = token_data["access_token"]
                         nuevo_refresh = token_data.get("refresh_token", refresh_token)
-                        st.session_state["credencial_actualizada"] = f"{correo}|{password}|{nuevo_refresh}|{client_id}"
+                        # Actualización silenciosa en segundo plano sin saturar la interfaz
+                        st.session_state["credenciales_input"] = f"{correo}|{password}|{nuevo_refresh}|{client_id}"
                         st.session_state["correo_activo"] = correo
                         
                         try:
@@ -663,10 +730,6 @@ with tab_lector:
         </div>
         """, unsafe_allow_html=True)
 
-        if st.session_state["credencial_actualizada"]:
-            with st.expander("Ver credencial actualizada"):
-                st.code(st.session_state["credencial_actualizada"], language="text")
-
         if len(correos) == 0:
             st.markdown("""
             <div class="empty-state-card">
@@ -678,10 +741,9 @@ with tab_lector:
         else:
             for idx, c in enumerate(correos):
                 es_mas_reciente = (idx == 0)
-                remitente_corto = c["remitente"].split("<")[0].strip() or c["remitente"]
+                remitente_corto = c["remitente"].split("<")[0].strip().strip('"') or c["remitente"]
                 asunto_corto = c["asunto"][:46] + ("..." if len(c["asunto"]) > 46 else "")
                 
-                # Sin numeración; resalta fecha/hora en negrita y agrega etiqueta al más reciente
                 if es_mas_reciente:
                     titulo_acordeon = f"**[MÁS RECIENTE] {c['fecha']}**  —  {asunto_corto} · {remitente_corto[:22]}"
                 else:
